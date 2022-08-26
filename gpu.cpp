@@ -1,0 +1,5 @@
+
+
+class GPU{
+    int x;
+};
