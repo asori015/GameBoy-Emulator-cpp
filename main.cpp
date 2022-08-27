@@ -2,6 +2,13 @@
 #include "olcConsoleGameEngine.h"
 #include "machine.h"
 
+class OneLoneCoder_Example: public olcConsoleGameEngine{
+    public:
+     bool OnUserCreate();
+     bool OnUserUpdate(float );
+    private:
+};
+
 class Screen{
     public:
      Screen(Machine* x);
@@ -18,6 +25,11 @@ void run(){
     Machine* machine = new Machine("Hello GameBoy Emulator!");
     Screen* screen = new Screen(machine);
     //screen.keypad = machine.getKeypad();
+
+    OneLoneCoder_Example game;
+    game.ConstructConsole(160, 100, 8, 8);
+    game.Start();
+
 }
 
 int main(){

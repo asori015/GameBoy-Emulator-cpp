@@ -128,7 +128,7 @@ http://www.twitch.tv/javidx9
 Character Set -> Use Unicode. Thanks! - Javidx9
 #endif
 
-#include <windows.h>
+// #include <windows.h>
 
 #include <iostream>
 #include <chrono>
