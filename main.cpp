@@ -1,4 +1,5 @@
 #include <iostream>
+#include "olcConsoleGameEngine.h"
 #include "machine.h"
 
 class Screen{
