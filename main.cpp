@@ -1,13 +1,19 @@
 #include <iostream>
-#include "olcConsoleGameEngine.h"
+// #include "olcConsoleGameEngine.h"
 #include "machine.h"
 
-class OneLoneCoder_Example: public olcConsoleGameEngine{
-    public:
-     bool OnUserCreate();
-     bool OnUserUpdate(float );
-    private:
-};
+#ifdef __APPLE_CC__
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+
+// class OneLoneCoder_Example: public olcConsoleGameEngine{
+//     public:
+//      bool OnUserCreate();
+//      bool OnUserUpdate(float );
+//     private:
+// };
 
 class Screen{
     public:
@@ -26,9 +32,9 @@ void run(){
     Screen* screen = new Screen(machine);
     //screen.keypad = machine.getKeypad();
 
-    OneLoneCoder_Example game;
-    game.ConstructConsole(160, 100, 8, 8);
-    game.Start();
+    // OneLoneCoder_Example game;
+    // game.ConstructConsole(160, 100, 8, 8);
+    // game.Start();
 
 }
 
