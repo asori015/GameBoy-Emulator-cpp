@@ -8,180 +8,182 @@
 #include "keypad.h"
 #include "soundboard.h"
 
-class Machine{
+class Keypad;
+
+class Machine{    
+public:
+    class ROMException : public std::exception {
     public:
-     class ROMException : public std::exception {
-         public:
-          std::string what() {
-              return "ROM Exception";
-          }
-     };
+        std::string what() {
+            return "ROM Exception";
+        }
+    };
 
-     struct MachineMode {
-         int afInitial;
-         bool isCgb;
-         const uint8_t* BIOS_ROM;
-     };
+    struct MachineMode {
+        int afInitial;
+        bool isCgb;
+        const uint8_t* BIOS_ROM;
+    };
 
-     enum class MachineModeEnum {
-         GAMEBOY,
-         GAMEBOY_POCKET,
-         GAMEBOY_COLOR
-     };
+    enum class MachineModeEnum {
+        GAMEBOY,
+        GAMEBOY_POCKET,
+        GAMEBOY_COLOR
+    };
 
-     /*
-     * Create a machine with a loaded ROM
-     * @param ROM ROM file
-     * @param mode Machine mode to boot into
-     * @param saveFile File to save external RAM to (or NULL)
-     */
-     Machine(std::string, MachineModeEnum, std::string savePath = "");
+    /*
+    * Create a machine with a loaded ROM
+    * @param ROM ROM file
+    * @param mode Machine mode to boot into
+    * @param saveFile File to save external RAM to (or NULL)
+    */
+    Machine(std::string, MachineModeEnum, std::string savePath = "");
 
-     /*
-     * @return True if switch speed succeeded. False otherwise.
-     */
-     bool trySpeedSwitch();
+    /*
+    * @return True if switch speed succeeded. False otherwise.
+    */
+    bool trySpeedSwitch();
 
-     /*
-     * Perform one instruction cycle
-     */
-     void cycle();
+    /*
+    * Perform one instruction cycle
+    */
+    void cycle();
 
-     /*
-     * Used for debugging, prints state info 
-     */
-     void printDebugState();
+    /*
+    * Used for debugging, prints state info 
+    */
+    void printDebugState();
 
-     /*
-     * Test single opcode tests
-     * @param source Inputstream to file specifying test
-     */
-     void test();
+    /*
+    * Test single opcode tests
+    * @param source Inputstream to file specifying test
+    */
+    void test();
 
-     /*
-     * @param screen Screen to attach to the GPU
-     */
-     void attachScreen( );
+    /*
+    * @param screen Screen to attach to the GPU
+    */
+    void attachScreen( );
 
-     /*
-     * @param speaker Speaker to attach to the SoundBoard
-     */
-     void attachSpeaker();
+    /*
+    * @param speaker Speaker to attach to the SoundBoard
+    */
+    void attachSpeaker();
 
-     /*
-     * Sets the mute status of the SoundBoard
-     * @param muted True if the SoundBoard should be muted
-     */
-     void mute(bool );
+    /*
+    * Sets the mute status of the SoundBoard
+    * @param muted True if the SoundBoard should be muted
+    */
+    void mute(bool );
 
-     /*
-     * Save the machine state
-     * @param os Destination stream
-     * @throws RomException Error writing state
-     */
-     void saveState( );
+    /*
+    * Save the machine state
+    * @param os Destination stream
+    * @throws RomException Error writing state
+    */
+    void saveState( );
 
-     /*
-     * Load machine state
-     * @param is Source stream
-     * @throws RomException Error reading state
-     */
-     void loadState();
+    /*
+    * Load machine state
+    * @param is Source stream
+    * @throws RomException Error reading state
+    */
+    void loadState();
 
-     /*
-     * Save external RAM (e.g. save file)
-     * @param os Destination stream
-     * @throws RomException Error writing save
-     */
-     void saveExternal();
+    /*
+    * Save external RAM (e.g. save file)
+    * @param os Destination stream
+    * @throws RomException Error writing save
+    */
+    void saveExternal();
 
-     /*
-     * Load external RAM (e.g. save file)
-     * @param is Source stream
-     * @throws RomException Error reading save
-     */
-     void loadExternal();
+    /*
+    * Load external RAM (e.g. save file)
+    * @param is Source stream
+    * @throws RomException Error reading save
+    */
+    void loadExternal();
 
-     /*
-     * Save state to default save file
-     * @throws RomException Errors writing save
-     */
-     void saveExternal(int );
+    /*
+    * Save state to default save file
+    * @throws RomException Errors writing save
+    */
+    void saveExternal(int );
 
-     /*
-     * Loads save from default file
-     * @throws RomException Errors reading save
-     */
-     void loadExternal(int );
+    /*
+    * Loads save from default file
+    * @throws RomException Errors reading save
+    */
+    void loadExternal(int );
 
-     // GETTERS AND SETTERS
+    // GETTERS AND SETTERS
 
-     /*
-     * @return A base path that can be used for save states, based on the
-     * path of the ROM loaded
-     */
-     std::string getSaveFilePath() { return this->saveFilePath; }
+    /*
+    * @return A base path that can be used for save states, based on the
+    * path of the ROM loaded
+    */
+    std::string getSaveFilePath() { return this->saveFilePath; }
 
-     /*
-     * @return Exposes the MMU, used for cheats
-     */
-     MMU* getMmu() { return this->mmu; }
+    /*
+    * @return Exposes the MMU, used for cheats
+    */
+    MMU* getMmu() { return this->mmu; }
 
-     /*
-     * @return The attached keypad
-     */
-     Keypad* getKeypad() { return this->keypad; }
+    /*
+    * @return The attached keypad
+    */
+    Keypad* getKeypad() { return this->keypad; }
 
-     /*
-     * Exposed so the frontend can adjust palettes
-     * @return The palette used when NOT in color mode
-     */
-     int* getDmgPallet() { return this->gpu->greyPallete; }
+    /*
+    * Exposed so the frontend can adjust palettes
+    * @return The palette used when NOT in color mode
+    */
+    int* getDmgPallet() { return this->gpu->greyPallete; }
 
-     /*
-     * Exposed so the frontend can adjust palettes
-     * @return The color palette used for background in CGB mode
-     */
-     int* getCgbBgPalette() { return this->gpu->bgPalColor; }
+    /*
+    * Exposed so the frontend can adjust palettes
+    * @return The color palette used for background in CGB mode
+    */
+    int* getCgbBgPalette() { return this->gpu->bgPalColor; }
 
-     /*
-     * Exposed so the frontend can adjust palettes
-     * @return The color palette used for sprites in CGB mode
-     */
-     int* getCgbObPalette() { return this->gpu->obPalColor; }
+    /*
+    * Exposed so the frontend can adjust palettes
+    * @return The color palette used for sprites in CGB mode
+    */
+    int* getCgbObPalette() { return this->gpu->obPalColor; }
 
-     CPU* cpu;
-     MMU* mmu;
-     GPU* gpu;
-     Timer* timer;
-     Keypad* keypad;
-     SoundBoard* soundBoard;
+    CPU* cpu;
+    MMU* mmu;
+    GPU* gpu;
+    Timer* timer;
+    Keypad* keypad;
+    SoundBoard* soundBoard;
 
-     bool halt;
-     bool stop;
+    bool halt;
+    bool stop;
 
-     int interruptsEnabled;
-     int interruptsFired;
+    int interruptsEnabled;
+    int interruptsFired;
 
-     /*
-     * Speeds up emulation by specified factor.
-     * Do not set to 0!
-     */
-     int speedUp = 1;
+    /*
+    * Speeds up emulation by specified factor.
+    * Do not set to 0!
+    */
+    int speedUp = 1;
 
-     MachineMode mode;
+    MachineMode mode;
 
-     std::string saveFilePath;
+    std::string saveFilePath;
 
-     // For CGB
-     bool doubleSpeed;
+    // For CGB
+    bool doubleSpeed;
 
-    private:
-     static std::string saveExtension(std::string );
+private:
+    static std::string saveExtension(std::string );
 
-     static const int RAM_SIZES[];
+    static const int RAM_SIZES[];
 
-     // For CGB
-     bool usingColor;
-     bool monochromeCompatibility;
+    // For CGB
+    bool usingColor;
+    bool monochromeCompatibility;
 };
