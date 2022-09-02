@@ -120,12 +120,12 @@ class Machine{
      * @return A base path that can be used for save states, based on the
      * path of the ROM loaded
      */
-     std::string getBaseNamePath() { return this->baseNamePath; }
+     std::string getSaveFilePath() { return this->saveFilePath; }
 
      /*
      * @return Exposes the MMU, used for cheats
      */
-     MMU getMmu() { return this->mmu; }
+     MMU* getMmu() { return this->mmu; }
 
      /*
      * @return The attached keypad
@@ -136,26 +136,26 @@ class Machine{
      * Exposed so the frontend can adjust palettes
      * @return The palette used when NOT in color mode
      */
-     int* getDmgPallet() { return this->gpu.greyPallete; }
+     int* getDmgPallet() { return this->gpu->greyPallete; }
 
      /*
      * Exposed so the frontend can adjust palettes
      * @return The color palette used for background in CGB mode
      */
-     int* getCgbBgPalette() { return this->gpu.bgPalColor; }
+     int* getCgbBgPalette() { return this->gpu->bgPalColor; }
 
      /*
      * Exposed so the frontend can adjust palettes
      * @return The color palette used for sprites in CGB mode
      */
-     int* getCgbObPalette() { return this->gpu.obPalColor; }
+     int* getCgbObPalette() { return this->gpu->obPalColor; }
 
-     CPU cpu;
-     MMU mmu;
-     GPU gpu;
+     CPU* cpu;
+     MMU* mmu;
+     GPU* gpu;
      Timer* timer;
      Keypad* keypad;
-     SoundBoard soundBoard;
+     SoundBoard* soundBoard;
 
      bool halt;
      bool stop;
@@ -179,8 +179,9 @@ class Machine{
     private:
      static std::string saveExtension(std::string );
 
+     static const int RAM_SIZES[];
+
      // For CGB
      bool usingColor;
-     bool monochromeCompatabiliy;
-     std::string baseNamePath;
+     bool monochromeCompatibility;
 };
