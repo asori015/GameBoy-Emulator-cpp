@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 // #include "olcConsoleGameEngine.h"
 #include "machine.h"
 
@@ -65,7 +66,7 @@ void renderFrame() {
 
 void run(int argc, char** argv){
     std::string ROMPath = "D:\\Games\\GBA\\pokemon\\vanilla\\Pokemon red.gb";
-    Machine* machine = new Machine("Hello GameBoy Emulator!");
+    Machine* machine = new Machine(ROMPath, Machine::MachineMode::GAMEBOY);
     Screen* screen = new Screen(machine);
     //screen.keypad = machine.getKeypad();
 
@@ -83,10 +84,29 @@ void run(int argc, char** argv){
 
     glutMainLoop();
 
-    // OneLoneCoder_Example game;
-    // game.ConstructConsole(160, 100, 8, 8);
-    // game.Start();
-
+    //Machine machine = new Machine(new File(ROMPath), Machine.MachineMode.GAMEBOY_COLOR);
+    //Screen screen = new Screen(machine);
+    //screen.keypad = machine.getKeypad();
+    //machine.attachScreen(screen);
+    //screen.makeContainer();
+    //PcSpeaker speaker = new PcSpeaker();
+    //machine.attachSpeaker(speaker);
+    //int[] pal = machine.getDmgPalette();
+    //// Totally arbitrary palette
+    //pal[0] = 0x0000ffff;
+    //pal[1] = 0x0020b010;
+    //pal[2] = 0x00400000;
+    //pal[3] = 0x00000000;
+    //while (screen.isOpen()) {
+    //    machine.cycle();
+    //}
+    //try {
+    //    machine.saveExternal();
+    //}
+    //catch (Exception e) {
+    //    e.printStackTrace();
+    //}
+    //System.out.println("Stopped");
 }
 
 int main(int argc, char** argv){
