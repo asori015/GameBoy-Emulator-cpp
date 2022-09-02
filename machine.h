@@ -72,7 +72,7 @@ class Machine{
      /*
      * @param speaker Speaker to attach to the SoundBoard
      */
-     void attachScreen();
+     void attachSpeaker();
 
      /*
      * Sets the mute status of the SoundBoard
@@ -112,13 +112,13 @@ class Machine{
      * Save state to default save file
      * @throws RomException Errors writing save
      */
-     void saveExternal();
+     void saveExternal(int );
 
      /*
      * Loads save from default file
      * @throws RomException Errors reading save
      */
-     void loadExternal();
+     void loadExternal(int );
 
      // GETTERS AND SETTERS
 
@@ -126,7 +126,7 @@ class Machine{
      * @return A base path that can be used for save states, based on the
      * path of the ROM loaded
      */
-     std::string GetBaseNamePath() { return this->baseNamePath; }
+     std::string getBaseNamePath() { return this->baseNamePath; }
 
      /*
      * @return Exposes the MMU, used for cheats
@@ -136,7 +136,7 @@ class Machine{
      /*
      * @return The attached keypad
      */
-     Keypad GetKeypad() { return this->keypad; }
+     Keypad getKeypad() { return this->keypad; }
 
      /*
      * Exposed so the frontend can adjust palettes

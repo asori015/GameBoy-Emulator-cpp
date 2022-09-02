@@ -26,6 +26,7 @@ const int PIXEL_ZOOM_Y = 4;
 class Screen{
     public:
      Screen(Machine* x);
+     Keypad keypad;
     private:
      Machine* x;
 };
@@ -66,9 +67,10 @@ void renderFrame() {
 
 void run(int argc, char** argv){
     std::string ROMPath = "D:\\Games\\GBA\\pokemon\\vanilla\\Pokemon red.gb";
-    Machine* machine = new Machine(ROMPath, Machine::MachineMode::GAMEBOY);
-    Screen* screen = new Screen(machine);
-    //screen.keypad = machine.getKeypad();
+    Machine* machine = new Machine(ROMPath, Machine::MachineModeEnum::GAMEBOY);
+    //Screen* screen = new Screen(machine);
+    //screen->keypad = machine->getKeypad();
+
 
     // Initialize OpenGL/FreeGLUT window
     glutInit(&argc, argv);
@@ -83,6 +85,8 @@ void run(int argc, char** argv){
     glutIdleFunc(renderFrame); // All other calls
 
     glutMainLoop();
+
+    /////////////////////////////////////
 
     //Machine machine = new Machine(new File(ROMPath), Machine.MachineMode.GAMEBOY_COLOR);
     //Screen screen = new Screen(machine);

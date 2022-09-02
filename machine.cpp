@@ -5,7 +5,7 @@ Machine::Machine(std::string msg, MachineModeEnum mode){
     //this->msg = msg;
     switch (mode){
     case Machine::MachineModeEnum::GAMEBOY:
-        this->mode = { 1, false, "a" };
+        //this->mode = { 1, false, "a" };
         break;
     case Machine::MachineModeEnum::GAMEBOY_POCKET:
         break;
@@ -16,8 +16,4 @@ Machine::Machine(std::string msg, MachineModeEnum mode){
         break;
     }
     //throw Machine::ROMException();
-}
-
-void Machine::hello(){
-    //std::cout << this->msg << std::endl;
 }
