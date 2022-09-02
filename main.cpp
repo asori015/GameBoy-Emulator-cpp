@@ -23,17 +23,17 @@ const int PIXEL_ZOOM_Y = 4;
 //     private:
 // };
 
-class Screen{
-    public:
-     Screen(Machine* x);
-     Keypad keypad;
-    private:
-     Machine* x;
-};
-
-Screen::Screen(Machine* x){
-    this->x = x;
-}
+//class Screen{
+//    public:
+//     Screen(Machine* x);
+//     Keypad keypad;
+//    private:
+//     Machine* x;
+//};
+//
+//Screen::Screen(Machine* x){
+//    this->x = x;
+//}
 
 
 char buffer[160 * 144 * 3 + 12];

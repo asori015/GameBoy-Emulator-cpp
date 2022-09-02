@@ -3,8 +3,8 @@
 #include "bootROMs.h"
 
 Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath) {
-    //this->timer = new Timer(this);
-    //this->keypad = new Keypad(this);
+    this->timer = new Timer(this);
+    this->keypad = new Keypad(this);
 
     switch (mode){
     case Machine::MachineModeEnum::GAMEBOY:
