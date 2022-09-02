@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "cpu.h"
 #include "mmu.h"
 #include "gpu.h"
@@ -19,7 +20,7 @@ class Machine{
      struct MachineMode {
          int afInitial;
          bool isCgb;
-         char* BIOS;
+         const uint8_t* BIOS_ROM;
      };
 
      enum class MachineModeEnum {
@@ -32,16 +33,9 @@ class Machine{
      * Create a machine with a loaded ROM
      * @param ROM ROM file
      * @param mode Machine mode to boot into
-     */
-     Machine(std::string, MachineModeEnum );
-
-     /*
-     * Create a machine with a loaded ROM
-     * @param ROM ROM file
-     * @param mode Machine mode to boot into
      * @param saveFile File to save external RAM to (or NULL)
      */
-     Machine(std::string, MachineModeEnum, std::string);
+     Machine(std::string, MachineModeEnum, std::string savePath = "");
 
      /*
      * @return True if switch speed succeeded. False otherwise.
@@ -136,7 +130,7 @@ class Machine{
      /*
      * @return The attached keypad
      */
-     Keypad getKeypad() { return this->keypad; }
+     Keypad* getKeypad() { return this->keypad; }
 
      /*
      * Exposed so the frontend can adjust palettes
@@ -159,8 +153,8 @@ class Machine{
      CPU cpu;
      MMU mmu;
      GPU gpu;
-     Timer timer;
-     Keypad keypad;
+     Timer* timer;
+     Keypad* keypad;
      SoundBoard soundBoard;
 
      bool halt;
@@ -183,7 +177,7 @@ class Machine{
      bool doubleSpeed;
 
     private:
-     std::string saveExtension(std::string );
+     static std::string saveExtension(std::string );
 
      // For CGB
      bool usingColor;

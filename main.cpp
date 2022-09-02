@@ -62,11 +62,11 @@ void renderFrame() {
     glutSwapBuffers();
     glutPostRedisplay();
     state = (state + 1) % 1999;
-    std::cout << state / 500 << std::endl;
+    //std::cout << state / 500 << std::endl;
 }
 
 void run(int argc, char** argv){
-    std::string ROMPath = "D:\\Games\\GBA\\pokemon\\vanilla\\Pokemon red.gb";
+    std::string ROMPath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     Machine* machine = new Machine(ROMPath, Machine::MachineModeEnum::GAMEBOY);
     //Screen* screen = new Screen(machine);
     //screen->keypad = machine->getKeypad();

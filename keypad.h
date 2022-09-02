@@ -1,5 +1,12 @@
 #pragma once
 
-class Keypad {
+#include "machine.h"
 
+class Keypad {
+public:
+    //Keypad(Machine* machine) {
+    //    this->machine = machine;
+    //}
+
+    //Machine* machine;
 };
