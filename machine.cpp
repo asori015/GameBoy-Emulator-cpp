@@ -98,7 +98,7 @@ Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath
         }
 
         // Create the memory component
-        this->gpu = new GPU(this);
+        this->gpu = new GPU(this, usingColor, monochromeCompatibility);
         this->mmu = new MMU(this);
         // Load this ROM file into it
         //mmu.loadRom(header, 0, 0x150);

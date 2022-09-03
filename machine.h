@@ -8,6 +8,10 @@
 #include "keypad.h"
 #include "soundboard.h"
 
+class CPU;
+class MMU;
+class GPU;
+class Timer;
 class Keypad;
 
 class Machine{    
@@ -138,19 +142,19 @@ public:
     * Exposed so the frontend can adjust palettes
     * @return The palette used when NOT in color mode
     */
-    int* getDmgPallet() { return this->gpu->greyPallete; }
+    //int* getDmgPallet() { return this->gpu->greyPallete; }
 
     /*
     * Exposed so the frontend can adjust palettes
     * @return The color palette used for background in CGB mode
     */
-    int* getCgbBgPalette() { return this->gpu->bgPalColor; }
+    //int* getCgbBgPalette() { return this->gpu->bgPalColor; }
 
     /*
     * Exposed so the frontend can adjust palettes
     * @return The color palette used for sprites in CGB mode
     */
-    int* getCgbObPalette() { return this->gpu->obPalColor; }
+    //int* getCgbObPalette() { return this->gpu->obPalColor; }
 
     CPU* cpu;
     MMU* mmu;
