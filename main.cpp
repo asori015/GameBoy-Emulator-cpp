@@ -84,7 +84,7 @@ void run(int argc, char** argv){
     glutDisplayFunc(initFrame); // Initial call
     glutIdleFunc(renderFrame); // All other calls
 
-    glutMainLoop();
+    //glutMainLoop();
 
     /////////////////////////////////////
 
