@@ -29,7 +29,11 @@ private:
         uint8_t flags = 0;
     };
 
+    enum class OpCodes {
+        ADD
+    };
+
     Machine* machine;
     Registers* registers;
-    static std::map<int, void(CPU::*)()> OpCodeMethods;
+    static std::map<OpCodes, void(CPU::*)()> OpCodeMethods;
 };

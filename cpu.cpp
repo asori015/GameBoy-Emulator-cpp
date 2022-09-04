@@ -15,7 +15,7 @@ void test() {
 }
 
 void CPU::execute(uint8_t instruction) {
-    (this->*OpCodeMethods[1])();
+    (this->*OpCodeMethods[CPU::OpCodes::ADD])();
 }
 
-std::map<int, void (CPU::*)()> CPU::OpCodeMethods = { {1, &CPU::hello} };
+std::map<CPU::OpCodes, void (CPU::*)()> CPU::OpCodeMethods = { {CPU::OpCodes::ADD, &CPU::hello} };
