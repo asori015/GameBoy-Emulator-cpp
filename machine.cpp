@@ -123,7 +123,7 @@ Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath
 
     
     
-    this->cpu = new CPU();
+    this->cpu = new CPU(this);
 }
 
 std::string Machine::saveExtension(std::string ROMPath) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include "machine.h"
 
 class Machine;
@@ -7,8 +8,9 @@ class Machine;
 class CPU {
 public:
 
-    CPU(Machine*);
-    void execute();
+    CPU(Machine* );
+    void execute(uint8_t );
+    void hello();
 
 private:
     struct Registers {
@@ -29,4 +31,5 @@ private:
 
     Machine* machine;
     Registers* registers;
+    static std::map<int, void(CPU::*)()> OpCodeMethods;
 };
