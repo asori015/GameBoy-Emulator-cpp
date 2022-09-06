@@ -9,8 +9,8 @@ class CPU {
 public:
 
     CPU(Machine* );
+    void step();
     void execute(uint8_t );
-    void hello();
 
 private:
     struct Registers {
@@ -29,11 +29,21 @@ private:
         uint8_t flags = 0;
     };
 
-    enum class OpCodes {
+    enum class ISA {
+        LD = 3,
+        NOP,
         ADD
     };
 
+    void INC();
+    void LD(uint8_t, uint8_t);
+    void ADD();
+
     Machine* machine;
     Registers* registers;
-    static std::map<OpCodes, void(CPU::*)()> OpCodeMethods;
+    static std::map<uint8_t, void(CPU::*)()> OpCodeMethods;
+    uint8_t* AddressBus { new uint8_t[0xFFFF]{} };
+    uint16_t PC;
+    uint16_t SP;
+    bool isHalted = false;
 };
