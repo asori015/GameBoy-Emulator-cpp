@@ -15,43 +15,36 @@ public:
     void execute(uint8_t );
 
 private:
-    struct Registers {
-        uint8_t* REGS = new uint8_t[8]();
-
-        enum REG {
-            A = 7,
-            B = 0,
-            C = 1,
-            D = 2,
-            E = 3,
-            F = 6,
-            H = 4,
-            L = 5
-        };
-
-        std::function<uint16_t()> getAF = [&]()->uint16_t {return (REGS[A] << 8) + REGS[F]; };
-        std::function<uint16_t()> getBC = [&]()->uint16_t {return (REGS[B] << 8) + REGS[C]; };
-        std::function<uint16_t()> getDE = [&]()->uint16_t {return (REGS[D] << 8) + REGS[E]; };
-        std::function<uint16_t()> getHL = [&]()->uint16_t {return (REGS[H] << 8) + REGS[L]; };
-
-        //std::function<void()> setAF = [&]()->void {return (REGS[A] << 8) + REGS[F]; };
-
-        // The actual flag register is REGS[6]
-        uint8_t flags = 0;
+    enum Register
+    {
+        A = 7,
+        B = 0,
+        C = 1,
+        D = 2,
+        E = 3,
+        F = 6,
+        H = 4,
+        L = 5
     };
 
     void loadBIOS(uint16_t );
     void run();
     void nop(uint8_t);
-    void LD_16_Bit(uint8_t);
-    void XOR(uint8_t);
+    void LD_R_to_R(uint8_t );
+    void LD_8_Bit(uint8_t);
+    void LD_16_Bit(uint8_t );
+    void XOR(uint8_t );
 
-    void Handle_00_Opcodes(uint8_t );
-    void Handle_01_Opcodes(uint8_t );
+    
     void Handle_10_Opcodes(uint8_t );
     void Handle_11_Opcodes(uint8_t );
 
     //Register helper functions
+    uint16_t getAF();
+    uint16_t getBC();
+    uint16_t getDE();
+    uint16_t getHL();
+
     void setAF(uint8_t, uint8_t );
     void setBC(uint8_t, uint8_t );
     void setDE(uint8_t, uint8_t );
@@ -68,10 +61,10 @@ private:
     void setZ(bool );
 
     Machine* machine;
-    Registers* registers;
+    uint8_t* registers = new uint8_t[8]{ 0 };
+    uint8_t* addressBus = new uint8_t[0xFFFF]{ 0 };
     static std::map<uint8_t, functionPointer> InstructionMethods1;
     static std::map<uint8_t, functionPointer> InstructionMethods2;
-    uint8_t* AddressBus { new uint8_t[0xFFFF]{} };
     uint16_t PC;
     uint16_t SP;
     bool isHalted = false;

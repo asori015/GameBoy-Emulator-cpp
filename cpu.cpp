@@ -5,7 +5,6 @@
 
 CPU::CPU(Machine* machine) {
     this->machine = machine;
-    this->registers = new Registers();
     this->PC = 0;
     this->SP = 0;
     this->loadBIOS(0);
@@ -25,7 +24,7 @@ CPU::CPU(Machine* machine) {
 void CPU::loadBIOS(uint16_t address) {
     const uint8_t* ROM = BootROMs::BIOS_DMG;
     for (uint16_t i = 0; i < 256; i++) {
-        AddressBus[address + i] = ROM[i];
+        addressBus[address + i] = ROM[i];
     }
 }
 
@@ -39,7 +38,7 @@ void CPU::run() {
 }
 
 void CPU::step() {
-    uint8_t instruction = this->AddressBus[this->PC];
+    uint8_t instruction = this->addressBus[this->PC];
     execute(instruction);
     //std::cout << "In Step";
 }
@@ -50,10 +49,132 @@ void CPU::execute(uint8_t instruction) {
     this->PC += 1;
 }
 
+void CPU::LD_R_to_R(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+    if (r1 == 0x06) {
+        if (r2 == 0x06) {
+            // HALT INSTRUCTION
+        }
+        else {
+            this->registers[r2] = this->addressBus[this->getHL()];
+            //std::cout << "In Load: " << int(this->registers[r2]) << " -> " << int(this->registers->HL()) << std::endl;
+        }
+    }
+    else if (r2 == 0x06) {
+        this->addressBus[this->getHL()] = this->registers[r1];
+        //std::cout << "In Load: " << int(this->registers[r2]) << " -> " << int(r2) << std::endl;
+    }
+    else {
+        this->registers[r2] = this->registers[r1];
+        //std::cout << "In Load: " << int(r1) << " -> " << int(r2) << std::endl;
+    }
+}
+
+void CPU::LD_8_Bit(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+    /*if (r1 == 0x01) {
+        switch (r2)
+        {
+        case 0x00:
+            this->AddressBus[this->registers->getBC()] = this->registers[A];
+            break;
+        case 0x01:
+            this->registers[A] = this->AddressBus[this->registers->getBC()];
+            break;
+        case 0x02:
+            this->AddressBus[this->registers->getDE()] = this->registers[A];
+            break;
+        case 0x03:
+            this->registers[A] = this->AddressBus[this->registers->getDE()];
+            break;
+        case 0x04:
+            this->AddressBus[hl] = this->registers[A];
+            hl += 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        case 0x05:
+            this->registers[A] = this->AddressBus[hl];
+            hl += 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        case 0x06:
+            this->AddressBus[hl] = this->registers[A];
+            hl -= 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        case 0x07:
+            this->registers[A] = this->AddressBus[hl];
+            hl -= 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        default:
+            break;
+        }
+    }*/
+    if (r1 == 0x02) {
+        uint16_t hl = this->getHL();
+        switch (r2)
+        {
+        case 0x00:
+            this->addressBus[this->getBC()] = this->registers[A];
+            break;
+        case 0x01:
+            this->registers[A] = this->addressBus[this->getBC()];
+            break;
+        case 0x02:
+            this->addressBus[this->getDE()] = this->registers[A];
+            break;
+        case 0x03:
+            this->registers[A] = this->addressBus[this->getDE()];
+            break;
+        case 0x04:
+            this->addressBus[hl] = this->registers[A];
+            hl += 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        case 0x05:
+            this->registers[A] = this->addressBus[hl];
+            hl += 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        case 0x06:
+            this->addressBus[hl] = this->registers[A];
+            hl -= 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        case 0x07:
+            this->registers[A] = this->addressBus[hl];
+            hl -= 1;
+            this->registers[H] = uint8_t(hl >> 8);
+            this->registers[L] = uint8_t(hl & 0x00FF);
+            break;
+        default:
+            break;
+        }
+    }
+    else if (r1 == 0x06) {
+        if (r2 == 0x06) {
+            this->addressBus[this->getHL()] = this->addressBus[this->PC];
+        }
+        else {
+            this->registers[r2] = this->addressBus[this->PC];
+        }
+    }
+}
+
 void CPU::LD_16_Bit(uint8_t instruction) {
     uint8_t encoding = (instruction & 0b00110000) >> 4;
-    uint8_t lVal = this->AddressBus[++(this->PC)];
-    uint8_t hVal = this->AddressBus[++(this->PC)];
+    uint8_t lVal = this->addressBus[++(this->PC)];
+    uint8_t hVal = this->addressBus[++(this->PC)];
     switch (encoding)
     {
     case 0x00:
@@ -77,142 +198,20 @@ void CPU::LD_16_Bit(uint8_t instruction) {
 void CPU::XOR(uint8_t instruction) {
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     if (encoding == 0x03) {
-        uint8_t nVal = this->AddressBus[++(this->PC)];
-        this->registers->REGS[this->registers->A] ^= nVal;
-        (this->registers->REGS[this->registers->A] == 0) ? setZ(true) : setZ(false);
+        uint8_t nVal = this->addressBus[++(this->PC)];
+        this->registers[A] ^= nVal;
+        (this->registers[A] == 0) ? setZ(true) : setZ(false);
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
-            this->registers->REGS[this->registers->A] ^= this->AddressBus[this->registers->getHL()];
-            (this->registers->REGS[this->registers->A] == 0) ? setZ(true) : setZ(false);
+            this->registers[A] ^= this->getHL();
+            (this->registers[A] == 0) ? setZ(true) : setZ(false);
         }
         else {
-            this->registers->REGS[this->registers->A] ^= this->registers->REGS[r];
-            (this->registers->REGS[this->registers->A] == 0) ? setZ(true) : setZ(false);
+            this->registers[A] ^= this->registers[r];
+            (this->registers[A] == 0) ? setZ(true) : setZ(false);
         }
-    }
-}
-
-void CPU::Handle_00_Opcodes(uint8_t instruction) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-    /*if (r1 == 0x01) {
-        switch (r2)
-        {
-        case 0x00:
-            this->AddressBus[this->registers->getBC()] = this->registers->REGS[this->registers->A];
-            break;
-        case 0x01:
-            this->registers->REGS[this->registers->A] = this->AddressBus[this->registers->getBC()];
-            break;
-        case 0x02:
-            this->AddressBus[this->registers->getDE()] = this->registers->REGS[this->registers->A];
-            break;
-        case 0x03:
-            this->registers->REGS[this->registers->A] = this->AddressBus[this->registers->getDE()];
-            break;
-        case 0x04:
-            this->AddressBus[hl] = this->registers->REGS[this->registers->A];
-            hl += 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x05:
-            this->registers->REGS[this->registers->A] = this->AddressBus[hl];
-            hl += 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x06:
-            this->AddressBus[hl] = this->registers->REGS[this->registers->A];
-            hl -= 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x07:
-            this->registers->REGS[this->registers->A] = this->AddressBus[hl];
-            hl -= 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        default:
-            break;
-        }
-    }*/
-    if (r1 == 0x02) {
-        uint16_t hl = this->registers->getHL();
-        switch (r2)
-        {
-        case 0x00:
-            this->AddressBus[this->registers->getBC()] = this->registers->REGS[this->registers->A];
-            break;
-        case 0x01:
-            this->registers->REGS[this->registers->A] = this->AddressBus[this->registers->getBC()];
-            break;
-        case 0x02:
-            this->AddressBus[this->registers->getDE()] = this->registers->REGS[this->registers->A];
-            break;
-        case 0x03:
-            this->registers->REGS[this->registers->A] = this->AddressBus[this->registers->getDE()];
-            break;
-        case 0x04:
-            this->AddressBus[hl] = this->registers->REGS[this->registers->A];
-            hl += 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x05:
-            this->registers->REGS[this->registers->A] = this->AddressBus[hl];
-            hl += 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x06:
-            this->AddressBus[hl] = this->registers->REGS[this->registers->A];
-            hl -= 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x07:
-            this->registers->REGS[this->registers->A] = this->AddressBus[hl];
-            hl -= 1;
-            this->registers->REGS[this->registers->H] = uint8_t(hl >> 8);
-            this->registers->REGS[this->registers->L] = uint8_t(hl & 0x00FF);
-            break;
-        default:
-            break;
-        }
-    }
-    else if (r1 == 0x06) {
-        if (r2 == 0x06) {
-            this->AddressBus[this->registers->getHL()] = this->AddressBus[this->PC];
-        }
-        else {
-            this->registers->REGS[r2] = this->AddressBus[this->PC];
-        }
-    }
-}
-
-void CPU::Handle_01_Opcodes(uint8_t instruction) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-    if (r1 == 0x06) {
-        if (r2 == 0x06) {
-            // HALT INSTRUCTION
-        }
-        else {
-            this->registers->REGS[r2] = this->AddressBus[this->registers->getHL()];
-            //std::cout << "In Load: " << int(this->registers->REGS[r2]) << " -> " << int(this->registers->HL()) << std::endl;
-        }
-    }
-    else if (r2 == 0x06) {
-        this->AddressBus[this->registers->getHL()] = this->registers->REGS[r1];
-        //std::cout << "In Load: " << int(this->registers->REGS[r2]) << " -> " << int(r2) << std::endl;
-    }
-    else {
-        this->registers->REGS[r2] = this->registers->REGS[r1];
-        //std::cout << "In Load: " << int(r1) << " -> " << int(r2) << std::endl;
     }
 }
 
@@ -228,219 +227,235 @@ void CPU::nop(uint8_t instruction) {
     std::cout << std::hex << int(instruction) << " nop" << std::endl;
 }
 
+uint16_t CPU::getAF() {
+    return (this->registers[A] << 8) + this->registers[F];
+}
+
+uint16_t CPU::getBC() {
+    return (this->registers[B] << 8) + this->registers[C];
+}
+
+uint16_t CPU::getDE() {
+    return (this->registers[D] << 8) + this->registers[E];
+}
+
+uint16_t CPU::getHL() {
+    return (this->registers[H] << 8) + this->registers[L];
+}
+
 void CPU::setAF(uint8_t hVal, uint8_t lVal) {
-    this->registers->REGS[this->registers->A] = hVal;
-    this->registers->REGS[this->registers->F] = lVal;
+    this->registers[A] = hVal;
+    this->registers[F] = lVal;
 }
 
 void CPU::setBC(uint8_t hVal, uint8_t lVal) {
-    this->registers->REGS[this->registers->B] = hVal;
-    this->registers->REGS[this->registers->C] = lVal;
+    this->registers[B] = hVal;
+    this->registers[C] = lVal;
 }
 
 void CPU::setDE(uint8_t hVal, uint8_t lVal) {
-    this->registers->REGS[this->registers->D] = hVal;
-    this->registers->REGS[this->registers->E] = lVal;
+    this->registers[D] = hVal;
+    this->registers[E] = lVal;
 }
 
 void CPU::setHL(uint8_t hVal, uint8_t lVal) {
-    this->registers->REGS[this->registers->H] = hVal;
-    this->registers->REGS[this->registers->L] = lVal;
+    this->registers[H] = hVal;
+    this->registers[L] = lVal;
 }
 
 void CPU::setAF(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers->REGS[this->registers->A] = hVal;
-    this->registers->REGS[this->registers->F] = lVal;
+    this->registers[A] = hVal;
+    this->registers[F] = lVal;
 }
 
 void CPU::setBC(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers->REGS[this->registers->B] = hVal;
-    this->registers->REGS[this->registers->C] = lVal;
+    this->registers[B] = hVal;
+    this->registers[C] = lVal;
 }
 
 void CPU::setDE(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers->REGS[this->registers->D] = hVal;
-    this->registers->REGS[this->registers->E] = lVal;
+    this->registers[D] = hVal;
+    this->registers[E] = lVal;
 }
 
 void CPU::setHL(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers->REGS[this->registers->H] = hVal;
-    this->registers->REGS[this->registers->L] = lVal;
+    this->registers[H] = hVal;
+    this->registers[L] = lVal;
 }
 
 void CPU::setC(bool val) {
     if (val == true) {
-        this->registers->REGS[this->registers->F] |= 0b00010000;
+        this->registers[F] |= 0b00010000;
     }
     else {
-        this->registers->REGS[this->registers->F] &= 0b11101111;
+        this->registers[F] &= 0b11101111;
     }
 }
 
 void CPU::setH(bool val) {
     if (val == true) {
-        this->registers->REGS[this->registers->F] |= 0b00100000;
+        this->registers[F] |= 0b00100000;
     }
     else {
-        this->registers->REGS[this->registers->F] &= 0b11011111;
+        this->registers[F] &= 0b11011111;
     }
 }
 
 void CPU::setN(bool val) {
     if (val == true) {
-        this->registers->REGS[this->registers->F] |= 0b01000000;
+        this->registers[F] |= 0b01000000;
     }
     else {
-        this->registers->REGS[this->registers->F] &= 0b10111111;
+        this->registers[F] &= 0b10111111;
     }
 }
 
 void CPU::setZ(bool val) {
     if (val == true) {
-        this->registers->REGS[this->registers->F] |= 0b10000000;
+        this->registers[F] |= 0b10000000;
     }
     else {
-        this->registers->REGS[this->registers->F] &= 0b01111111;
+        this->registers[F] &= 0b01111111;
     }
 }
 
 std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = { 
     {0X00, &CPU::nop},
     {0X01, &CPU::LD_16_Bit},
-    {0X02, &CPU::nop},
+    {0X02, &CPU::LD_8_Bit},
     {0X03, &CPU::nop},
     {0X04, &CPU::nop},
     {0X05, &CPU::nop},
-    {0X06, &CPU::nop},
+    {0X06, &CPU::LD_8_Bit},
     {0X07, &CPU::nop},
     {0X08, &CPU::nop},
     {0X09, &CPU::nop},
-    {0X0A, &CPU::nop},
+    {0X0A, &CPU::LD_8_Bit},
     {0X0B, &CPU::nop},
     {0X0C, &CPU::nop},
     {0X0D, &CPU::nop},
-    {0X0E, &CPU::nop},
+    {0X0E, &CPU::LD_8_Bit},
     {0X0F, &CPU::nop},
     {0X10, &CPU::nop},
     {0X11, &CPU::LD_16_Bit},
-    {0X12, &CPU::nop},
+    {0X12, &CPU::LD_8_Bit},
     {0X13, &CPU::nop},
     {0X14, &CPU::nop},
     {0X15, &CPU::nop},
-    {0X16, &CPU::nop},
+    {0X16, &CPU::LD_8_Bit},
     {0X17, &CPU::nop},
     {0X18, &CPU::nop},
     {0X19, &CPU::nop},
-    {0X1A, &CPU::nop},
+    {0X1A, &CPU::LD_8_Bit},
     {0X1B, &CPU::nop},
     {0X1C, &CPU::nop},
     {0X1D, &CPU::nop},
-    {0X1E, &CPU::nop},
+    {0X1E, &CPU::LD_8_Bit},
     {0X1F, &CPU::nop},
     {0X20, &CPU::nop},
     {0X21, &CPU::LD_16_Bit},
-    {0X22, &CPU::nop},
+    {0X22, &CPU::LD_8_Bit},
     {0X23, &CPU::nop},
     {0X24, &CPU::nop},
     {0X25, &CPU::nop},
-    {0X26, &CPU::nop},
+    {0X26, &CPU::LD_8_Bit},
     {0X27, &CPU::nop},
     {0X28, &CPU::nop},
     {0X29, &CPU::nop},
-    {0X2A, &CPU::nop},
+    {0X2A, &CPU::LD_8_Bit},
     {0X2B, &CPU::nop},
     {0X2C, &CPU::nop},
     {0X2D, &CPU::nop},
-    {0X2E, &CPU::nop},
+    {0X2E, &CPU::LD_8_Bit},
     {0X2F, &CPU::nop},
     {0X30, &CPU::nop},
     {0X31, &CPU::LD_16_Bit},
-    {0X32, &CPU::nop},
+    {0X32, &CPU::LD_8_Bit},
     {0X33, &CPU::nop},
     {0X34, &CPU::nop},
     {0X35, &CPU::nop},
-    {0X36, &CPU::nop},
+    {0X36, &CPU::LD_8_Bit},
     {0X37, &CPU::nop},
     {0X38, &CPU::nop},
     {0X39, &CPU::nop},
-    {0X3A, &CPU::nop},
+    {0X3A, &CPU::LD_8_Bit},
     {0X3B, &CPU::nop},
     {0X3C, &CPU::nop},
     {0X3D, &CPU::nop},
-    {0X3E, &CPU::nop},
+    {0X3E, &CPU::LD_8_Bit},
     {0X3F, &CPU::nop},
-    {0X40, &CPU::nop},
-    {0X41, &CPU::nop},
-    {0X42, &CPU::nop},
-    {0X43, &CPU::nop},
-    {0X44, &CPU::nop},
-    {0X45, &CPU::nop},
-    {0X46, &CPU::nop},
-    {0X47, &CPU::nop},
-    {0X48, &CPU::nop},
-    {0X49, &CPU::nop},
-    {0X4A, &CPU::nop},
-    {0X4B, &CPU::nop},
-    {0X4C, &CPU::nop},
-    {0X4D, &CPU::nop},
-    {0X4E, &CPU::nop},
-    {0X4F, &CPU::nop},
-    {0X50, &CPU::nop},
-    {0X51, &CPU::nop},
-    {0X52, &CPU::nop},
-    {0X53, &CPU::nop},
-    {0X54, &CPU::nop},
-    {0X55, &CPU::nop},
-    {0X56, &CPU::nop},
-    {0X57, &CPU::nop},
-    {0X58, &CPU::nop},
-    {0X59, &CPU::nop},
-    {0X5A, &CPU::nop},
-    {0X5B, &CPU::nop},
-    {0X5C, &CPU::nop},
-    {0X5D, &CPU::nop},
-    {0X5E, &CPU::nop},
-    {0X5F, &CPU::nop},
-    {0X60, &CPU::nop},
-    {0X61, &CPU::nop},
-    {0X62, &CPU::nop},
-    {0X63, &CPU::nop},
-    {0X64, &CPU::nop},
-    {0X65, &CPU::nop},
-    {0X66, &CPU::nop},
-    {0X67, &CPU::nop},
-    {0X68, &CPU::nop},
-    {0X69, &CPU::nop},
-    {0X6A, &CPU::nop},
-    {0X6B, &CPU::nop},
-    {0X6C, &CPU::nop},
-    {0X6D, &CPU::nop},
-    {0X6E, &CPU::nop},
-    {0X6F, &CPU::nop},
-    {0X70, &CPU::nop},
-    {0X71, &CPU::nop},
-    {0X72, &CPU::nop},
-    {0X73, &CPU::nop},
-    {0X74, &CPU::nop},
-    {0X75, &CPU::nop},
-    {0X76, &CPU::nop},
-    {0X77, &CPU::nop},
-    {0X78, &CPU::nop},
-    {0X79, &CPU::nop},
-    {0X7A, &CPU::nop},
-    {0X7B, &CPU::nop},
-    {0X7C, &CPU::nop},
-    {0X7D, &CPU::nop},
-    {0X7E, &CPU::nop},
-    {0X7F, &CPU::nop},
+    {0X40, &CPU::LD_R_to_R},
+    {0X41, &CPU::LD_R_to_R},
+    {0X42, &CPU::LD_R_to_R},
+    {0X43, &CPU::LD_R_to_R},
+    {0X44, &CPU::LD_R_to_R},
+    {0X45, &CPU::LD_R_to_R},
+    {0X46, &CPU::LD_R_to_R},
+    {0X47, &CPU::LD_R_to_R},
+    {0X48, &CPU::LD_R_to_R},
+    {0X49, &CPU::LD_R_to_R},
+    {0X4A, &CPU::LD_R_to_R},
+    {0X4B, &CPU::LD_R_to_R},
+    {0X4C, &CPU::LD_R_to_R},
+    {0X4D, &CPU::LD_R_to_R},
+    {0X4E, &CPU::LD_R_to_R},
+    {0X4F, &CPU::LD_R_to_R},
+    {0X50, &CPU::LD_R_to_R},
+    {0X51, &CPU::LD_R_to_R},
+    {0X52, &CPU::LD_R_to_R},
+    {0X53, &CPU::LD_R_to_R},
+    {0X54, &CPU::LD_R_to_R},
+    {0X55, &CPU::LD_R_to_R},
+    {0X56, &CPU::LD_R_to_R},
+    {0X57, &CPU::LD_R_to_R},
+    {0X58, &CPU::LD_R_to_R},
+    {0X59, &CPU::LD_R_to_R},
+    {0X5A, &CPU::LD_R_to_R},
+    {0X5B, &CPU::LD_R_to_R},
+    {0X5C, &CPU::LD_R_to_R},
+    {0X5D, &CPU::LD_R_to_R},
+    {0X5E, &CPU::LD_R_to_R},
+    {0X5F, &CPU::LD_R_to_R},
+    {0X60, &CPU::LD_R_to_R},
+    {0X61, &CPU::LD_R_to_R},
+    {0X62, &CPU::LD_R_to_R},
+    {0X63, &CPU::LD_R_to_R},
+    {0X64, &CPU::LD_R_to_R},
+    {0X65, &CPU::LD_R_to_R},
+    {0X66, &CPU::LD_R_to_R},
+    {0X67, &CPU::LD_R_to_R},
+    {0X68, &CPU::LD_R_to_R},
+    {0X69, &CPU::LD_R_to_R},
+    {0X6A, &CPU::LD_R_to_R},
+    {0X6B, &CPU::LD_R_to_R},
+    {0X6C, &CPU::LD_R_to_R},
+    {0X6D, &CPU::LD_R_to_R},
+    {0X6E, &CPU::LD_R_to_R},
+    {0X6F, &CPU::LD_R_to_R},
+    {0X70, &CPU::LD_R_to_R},
+    {0X71, &CPU::LD_R_to_R},
+    {0X72, &CPU::LD_R_to_R},
+    {0X73, &CPU::LD_R_to_R},
+    {0X74, &CPU::LD_R_to_R},
+    {0X75, &CPU::LD_R_to_R},
+    {0X76, &CPU::LD_R_to_R},
+    {0X77, &CPU::LD_R_to_R},
+    {0X78, &CPU::LD_R_to_R},
+    {0X79, &CPU::LD_R_to_R},
+    {0X7A, &CPU::LD_R_to_R},
+    {0X7B, &CPU::LD_R_to_R},
+    {0X7C, &CPU::LD_R_to_R},
+    {0X7D, &CPU::LD_R_to_R},
+    {0X7E, &CPU::LD_R_to_R},
+    {0X7F, &CPU::LD_R_to_R},
     {0X80, &CPU::nop},
     {0X81, &CPU::nop},
     {0X82, &CPU::nop},
