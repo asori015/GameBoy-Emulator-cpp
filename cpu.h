@@ -40,14 +40,19 @@ private:
         uint8_t flags = 0;
     };
 
+    void loadBIOS(uint16_t );
+    void run();
     void Handle_00_Opcodes(uint8_t );
     void Handle_01_Opcodes(uint8_t );
     void Handle_10_Opcodes(uint8_t );
     void Handle_11_Opcodes(uint8_t );
 
+    void nop(uint8_t );
+
     Machine* machine;
     Registers* registers;
-    static std::map<uint8_t, functionPointer> OpCodeMethods;
+    static std::map<uint8_t, functionPointer> InstructionMethods1;
+    static std::map<uint8_t, functionPointer> InstructionMethods2;
     uint8_t* AddressBus { new uint8_t[0xFFFF]{} };
     uint16_t PC;
     uint16_t SP;

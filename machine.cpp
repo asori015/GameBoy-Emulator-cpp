@@ -2,7 +2,6 @@
 #include <fstream>
 #include <vector>
 #include "machine.h"
-#include "bootROMs.h"
 
 const int Machine::RAM_SIZES[] = { 0, 1 << 11, 1 << 13, 1 << 15, 1 << 17 };
 
@@ -18,13 +17,13 @@ Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath
 
     switch (mode){
     case Machine::MachineModeEnum::GAMEBOY:
-        this->mode = { 1, false, BootROMs::BIOS_DMG };
+        //this->mode = { 1, false, BootROMs::BIOS_DMG };
         break;
     case Machine::MachineModeEnum::GAMEBOY_POCKET:
-        this->mode = { 1, false, BootROMs::BIOS_DMG };
+        //this->mode = { 1, false, BootROMs::BIOS_DMG };
         break;
     case Machine::MachineModeEnum::GAMEBOY_COLOR:
-        this->mode = { 0x11, true, BootROMs::BIOS_CGB };
+        //this->mode = { 0x11, true, BootROMs::BIOS_CGB };
         break;
     default:
         //throw Machine::ROMException("No valid machine mode specified");
