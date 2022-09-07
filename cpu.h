@@ -42,12 +42,22 @@ private:
 
     void loadBIOS(uint16_t );
     void run();
+    void nop(uint8_t);
+    void LD_16_Bit(uint8_t);
     void Handle_00_Opcodes(uint8_t );
     void Handle_01_Opcodes(uint8_t );
     void Handle_10_Opcodes(uint8_t );
     void Handle_11_Opcodes(uint8_t );
 
-    void nop(uint8_t );
+    void setAF(uint8_t, uint8_t );
+    void setBC(uint8_t, uint8_t );
+    void setDE(uint8_t, uint8_t );
+    void setHL(uint8_t, uint8_t );
+
+    void setAF(uint16_t );
+    void setBC(uint16_t );
+    void setDE(uint16_t );
+    void setHL(uint16_t );
 
     Machine* machine;
     Registers* registers;

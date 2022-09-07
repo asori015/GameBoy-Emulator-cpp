@@ -50,6 +50,30 @@ void CPU::execute(uint8_t instruction) {
     this->PC += 1;
 }
 
+void CPU::LD_16_Bit(uint8_t instruction) {
+    uint8_t encoding = (instruction & 0b00110000) >> 4;
+    uint8_t lVal = this->AddressBus[++(this->PC)];
+    uint8_t hVal = this->AddressBus[++(this->PC)];
+    switch (encoding)
+    {
+    case 0x00:
+        this->setBC(hVal, lVal);
+        break;
+    case 0x01:
+        this->setDE(hVal, lVal);
+        break;
+    case 0x02:
+        this->setHL(hVal, lVal);
+        break;
+    case 0x03:
+        this->SP = (hVal << 8) + lVal;
+        //std::cout << "SP = " << std::hex << int(this->SP) << std::endl;
+        break;
+    default:
+        break;
+    }
+}
+
 void CPU::Handle_00_Opcodes(uint8_t instruction) {
     uint8_t r1 = instruction & 0x07;
     uint8_t r2 = (instruction & 0x38) >> 3;
@@ -184,9 +208,57 @@ void CPU::nop(uint8_t instruction) {
     std::cout << std::hex << int(instruction) << " nop" << std::endl;
 }
 
+void CPU::setAF(uint8_t hVal, uint8_t lVal) {
+    this->registers->REGS[this->registers->A] = hVal;
+    this->registers->REGS[this->registers->F] = lVal;
+}
+
+void CPU::setBC(uint8_t hVal, uint8_t lVal) {
+    this->registers->REGS[this->registers->B] = hVal;
+    this->registers->REGS[this->registers->C] = lVal;
+}
+
+void CPU::setDE(uint8_t hVal, uint8_t lVal) {
+    this->registers->REGS[this->registers->D] = hVal;
+    this->registers->REGS[this->registers->E] = lVal;
+}
+
+void CPU::setHL(uint8_t hVal, uint8_t lVal) {
+    this->registers->REGS[this->registers->H] = hVal;
+    this->registers->REGS[this->registers->L] = lVal;
+}
+
+void CPU::setAF(uint16_t value) {
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
+    this->registers->REGS[this->registers->A] = hVal;
+    this->registers->REGS[this->registers->F] = lVal;
+}
+
+void CPU::setBC(uint16_t value) {
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
+    this->registers->REGS[this->registers->B] = hVal;
+    this->registers->REGS[this->registers->C] = lVal;
+}
+
+void CPU::setDE(uint16_t value) {
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
+    this->registers->REGS[this->registers->D] = hVal;
+    this->registers->REGS[this->registers->E] = lVal;
+}
+
+void CPU::setHL(uint16_t value) {
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
+    this->registers->REGS[this->registers->H] = hVal;
+    this->registers->REGS[this->registers->L] = lVal;
+}
+
 std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = { 
     {0X00, &CPU::nop},
-    {0X01, &CPU::nop},
+    {0X01, &CPU::LD_16_Bit},
     {0X02, &CPU::nop},
     {0X03, &CPU::nop},
     {0X04, &CPU::nop},
@@ -202,7 +274,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0X0E, &CPU::nop},
     {0X0F, &CPU::nop},
     {0X10, &CPU::nop},
-    {0X11, &CPU::nop},
+    {0X11, &CPU::LD_16_Bit},
     {0X12, &CPU::nop},
     {0X13, &CPU::nop},
     {0X14, &CPU::nop},
@@ -218,7 +290,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0X1E, &CPU::nop},
     {0X1F, &CPU::nop},
     {0X20, &CPU::nop},
-    {0X21, &CPU::nop},
+    {0X21, &CPU::LD_16_Bit},
     {0X22, &CPU::nop},
     {0X23, &CPU::nop},
     {0X24, &CPU::nop},
@@ -234,7 +306,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0X2E, &CPU::nop},
     {0X2F, &CPU::nop},
     {0X30, &CPU::nop},
-    {0X31, &CPU::Handle_11_Opcodes},
+    {0X31, &CPU::LD_16_Bit},
     {0X32, &CPU::nop},
     {0X33, &CPU::nop},
     {0X34, &CPU::nop},
