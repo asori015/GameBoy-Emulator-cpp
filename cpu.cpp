@@ -74,6 +74,26 @@ void CPU::LD_16_Bit(uint8_t instruction) {
     }
 }
 
+void CPU::XOR(uint8_t instruction) {
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    if (encoding == 0x03) {
+        uint8_t nVal = this->AddressBus[++(this->PC)];
+        this->registers->REGS[this->registers->A] ^= nVal;
+        (this->registers->REGS[this->registers->A] == 0) ? setZ(true) : setZ(false);
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            this->registers->REGS[this->registers->A] ^= this->AddressBus[this->registers->getHL()];
+            (this->registers->REGS[this->registers->A] == 0) ? setZ(true) : setZ(false);
+        }
+        else {
+            this->registers->REGS[this->registers->A] ^= this->registers->REGS[r];
+            (this->registers->REGS[this->registers->A] == 0) ? setZ(true) : setZ(false);
+        }
+    }
+}
+
 void CPU::Handle_00_Opcodes(uint8_t instruction) {
     uint8_t r1 = instruction & 0x07;
     uint8_t r2 = (instruction & 0x38) >> 3;
@@ -256,6 +276,42 @@ void CPU::setHL(uint16_t value) {
     this->registers->REGS[this->registers->L] = lVal;
 }
 
+void CPU::setC(bool val) {
+    if (val == true) {
+        this->registers->REGS[this->registers->F] |= 0b00010000;
+    }
+    else {
+        this->registers->REGS[this->registers->F] &= 0b11101111;
+    }
+}
+
+void CPU::setH(bool val) {
+    if (val == true) {
+        this->registers->REGS[this->registers->F] |= 0b00100000;
+    }
+    else {
+        this->registers->REGS[this->registers->F] &= 0b11011111;
+    }
+}
+
+void CPU::setN(bool val) {
+    if (val == true) {
+        this->registers->REGS[this->registers->F] |= 0b01000000;
+    }
+    else {
+        this->registers->REGS[this->registers->F] &= 0b10111111;
+    }
+}
+
+void CPU::setZ(bool val) {
+    if (val == true) {
+        this->registers->REGS[this->registers->F] |= 0b10000000;
+    }
+    else {
+        this->registers->REGS[this->registers->F] &= 0b01111111;
+    }
+}
+
 std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = { 
     {0X00, &CPU::nop},
     {0X01, &CPU::LD_16_Bit},
@@ -425,14 +481,14 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XA5, &CPU::nop},
     {0XA6, &CPU::nop},
     {0XA7, &CPU::nop},
-    {0XA8, &CPU::nop},
-    {0XA9, &CPU::nop},
-    {0XAA, &CPU::nop},
-    {0XAB, &CPU::nop},
-    {0XAC, &CPU::nop},
-    {0XAD, &CPU::nop},
-    {0XAE, &CPU::nop},
-    {0XAF, &CPU::nop},
+    {0XA8, &CPU::XOR},
+    {0XA9, &CPU::XOR},
+    {0XAA, &CPU::XOR},
+    {0XAB, &CPU::XOR},
+    {0XAC, &CPU::XOR},
+    {0XAD, &CPU::XOR},
+    {0XAE, &CPU::XOR},
+    {0XAF, &CPU::XOR},
     {0XB0, &CPU::nop},
     {0XB1, &CPU::nop},
     {0XB2, &CPU::nop},
@@ -495,7 +551,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XEB, &CPU::nop},
     {0XEC, &CPU::nop},
     {0XED, &CPU::nop},
-    {0XEE, &CPU::nop},
+    {0XEE, &CPU::XOR},
     {0XEF, &CPU::nop},
     {0XF0, &CPU::nop},
     {0XF1, &CPU::nop},
