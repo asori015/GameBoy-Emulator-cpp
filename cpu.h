@@ -18,18 +18,32 @@ private:
     struct Registers {
         uint8_t* REGS = new uint8_t[8]();
 
-        std::function<uint16_t()> AF = [&]()->uint16_t {return (REGS[7] << 8) + REGS[6]; };
-        std::function<uint16_t()> BC = [&]()->uint16_t {return (REGS[0] << 8) + REGS[1]; };
-        std::function<uint16_t()> DE = [&]()->uint16_t {return (REGS[2] << 8) + REGS[3]; };
-        std::function<uint16_t()> HL = [&]()->uint16_t {return (REGS[4] << 8) + REGS[5]; };
+        enum REG {
+            A = 7,
+            B = 0,
+            C = 1,
+            D = 2,
+            E = 3,
+            F = 6,
+            H = 4,
+            L = 5
+        };
+
+        std::function<uint16_t()> getAF = [&]()->uint16_t {return (REGS[A] << 8) + REGS[F]; };
+        std::function<uint16_t()> getBC = [&]()->uint16_t {return (REGS[B] << 8) + REGS[C]; };
+        std::function<uint16_t()> getDE = [&]()->uint16_t {return (REGS[D] << 8) + REGS[E]; };
+        std::function<uint16_t()> getHL = [&]()->uint16_t {return (REGS[H] << 8) + REGS[L]; };
+
+        //std::function<void()> setAF = [&]()->void {return (REGS[A] << 8) + REGS[F]; };
 
         // The actual flag register is REGS[6]
         uint8_t flags = 0;
     };
 
-    void INC(uint8_t );
-    void LD(uint8_t );
-    void ADD(uint8_t );
+    void Handle_00_Opcodes(uint8_t );
+    void Handle_01_Opcodes(uint8_t );
+    void Handle_10_Opcodes(uint8_t );
+    void Handle_11_Opcodes(uint8_t );
 
     Machine* machine;
     Registers* registers;
