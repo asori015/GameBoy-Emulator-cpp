@@ -10,14 +10,14 @@ CPU::CPU(Machine* machine) {
     this->SP = 0;
     //this->loadBIOS(0);
 
-    this->addressBus[0] = 0x80;
-    this->addressBus[1] = 0x8B;
-    this->registers[A] = 0xE2;
+    this->addressBus[0] = 0x93;
+    // this->addressBus[1] = 0x8B;
+    this->registers[A] = 0x3e;
     this->registers[F] = 0x00;
-    this->registers[B] = 0xFF;
+    this->registers[B] = 0x01;
     this->registers[C] = 0x01;
     this->registers[D] = 0x01;
-    this->registers[E] = 0x1e;
+    this->registers[E] = 0x40;
     this->registers[H] = 0x01;
     this->registers[L] = 0x01;
     this->run();
@@ -295,11 +295,70 @@ void CPU::ADC(uint8_t instruction) {
 }
 
 void CPU::SUB(uint8_t instruction) {
-    ;
+    std::cout << "SUB A " << std::endl;
+
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    uint8_t rVal = this->registers[A];
+    uint8_t nVal;
+
+    // Get the value being used for the calculation with Register A
+    if (encoding == 0x03) {
+        nVal = this->addressBus[++(this->PC)];
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            nVal = this->addressBus[this->getHL()];
+        }
+        else {
+            nVal = this->registers[r];
+        }
+    }
+
+    // Calculate if Half-Carry flag needs to be set
+    ((nVal & 0x0F) > (rVal & 0x0F)) ? this->setH(true) : this->setH(false);
+    // Perform subtraction to A register
+    this->registers[A] -= nVal;
+    // Calculate if Full-Carry flag needs to be set
+    (nVal > rVal) ? this->setC(true) : this->setC(false);
+    // Calculate if Zero flag needs to be set
+    (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+
+    this->setN(true);
 }
 
 void CPU::SBC(uint8_t instruction) {
-    ;
+    std::cout << "SBC A " << std::endl;
+
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    uint8_t rVal = this->registers[A];
+    uint8_t nVal;
+
+    // Get the value being used for the calculation with Register A
+    if (encoding == 0x03) {
+        nVal = this->addressBus[++(this->PC)];
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            nVal = this->addressBus[this->getHL()];
+        }
+        else {
+            nVal = this->registers[r];
+        }
+    }
+
+    // Calculate if Half-Carry flag needs to be set
+    // this is incorrect
+    ((nVal & 0x0F) + this->getC() > (rVal & 0x0F)) ? this->setH(true) : this->setH(false);
+    // Perform subtraction to A register
+    this->registers[A] -= nVal + this->getC();
+    // Calculate if Full-Carry flag needs to be set
+    (nVal + this->getC() > rVal) ? this->setC(true) : this->setC(false);
+    // Calculate if Zero flag needs to be set
+    (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+
+    this->setN(true);
 }
 
 void CPU::AND(uint8_t instruction) {
@@ -386,8 +445,8 @@ void CPU::setHL(uint8_t hVal, uint8_t lVal) {
 }
 
 void CPU::setAF(uint16_t value) {
-    uint8_t hVal = (uint8_t)value >> 8;
-    uint8_t lVal = (uint8_t)value & 0x00FF;
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
     this->registers[A] = hVal;
     this->registers[F] = lVal;
 }
