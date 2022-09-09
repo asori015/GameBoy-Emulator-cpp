@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "cpu.h"
 #include "bootroms.h"
 
@@ -7,16 +8,18 @@ CPU::CPU(Machine* machine) {
     this->machine = machine;
     this->PC = 0;
     this->SP = 0;
-    this->loadBIOS(0);
+    //this->loadBIOS(0);
+
+    this->addressBus[0] = 0x80;
+    this->registers[A] = 0x3C;
+    this->registers[F] = 0x00;
+    this->registers[B] = 0x12;
+    this->registers[C] = 0x01;
+    this->registers[D] = 0x01;
+    this->registers[E] = 0x01;
+    this->registers[H] = 0x01;
+    this->registers[L] = 0x01;
     this->run();
-
-    //AddressBus[0] = 0x46;
-    //registers->REGS[4] = 0xff;
-    //registers->REGS[5] = 0xff;
-
-    /*for (int i = 0; i < 256; i++) {
-        std::cout << "{0x" << std::hex << i << ", &CPU::todo}," << std::endl;
-    }*/
 
     //this->step();
 }
@@ -40,6 +43,7 @@ void CPU::run() {
 void CPU::step() {
     uint8_t instruction = this->addressBus[this->PC];
     execute(instruction);
+    debug();
     //std::cout << "In Step";
 }
 
@@ -195,32 +199,106 @@ void CPU::LD_16_Bit(uint8_t instruction) {
     }
 }
 
+void CPU::ADD(uint8_t instruction) {
+    std::cout << "ADD A " << std::endl;
+
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    uint8_t rVal = this->registers[A];
+    if (encoding == 0x03) {
+        uint8_t nVal = this->addressBus[++(this->PC)];
+
+        // Calculate if Half-Carry flag needs to be set
+        (((nVal & 0x0F) + (rVal & 0x0F)) > 0x0F) ? this->setH(true) : this->setH(false);
+        // Perform addition to A register
+        this->registers[A] += nVal;
+        // Calculate if Full-Carry flag needs to be set
+        (this->registers[A] < nVal || this->registers[A] < rVal) ? this->setC(true) : this->setC(false);
+        // Calculate if Zero flag needs to be set
+        (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            uint8_t nVal = this->addressBus[this->getHL()];
+
+            // Calculate if Half-Carry flag needs to be set
+            (((nVal & 0x0F) + (rVal & 0x0F)) > 0x0F) ? this->setH(true) : this->setH(false);
+            // Perform addition to A register
+            this->registers[A] += nVal;
+            // Calculate if Full-Carry flag needs to be set
+            (this->registers[A] < nVal || this->registers[A] < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Zero flag needs to be set
+            (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+        }
+        else {
+            uint8_t nVal = this->registers[r];
+
+            // Calculate if Half-Carry flag needs to be set
+            (((nVal & 0x0F) + (rVal & 0x0F)) > 0x0F) ? this->setH(true) : this->setH(false);
+            // Perform addition to A register
+            this->registers[A] += nVal;
+            // Calculate if Full-Carry flag needs to be set
+            (this->registers[A] < nVal || this->registers[A] < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Zero flag needs to be set
+            (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+        }
+    }
+    this->setN(false);
+}
+
+void CPU::ADC(uint8_t instruction) {
+    ;
+}
+
+void CPU::SUB(uint8_t instruction) {
+    ;
+}
+
+void CPU::SBC(uint8_t instruction) {
+    ;
+}
+
+void CPU::AND(uint8_t instruction) {
+    ;
+}
+
 void CPU::XOR(uint8_t instruction) {
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     if (encoding == 0x03) {
         uint8_t nVal = this->addressBus[++(this->PC)];
         this->registers[A] ^= nVal;
-        (this->registers[A] == 0) ? setZ(true) : setZ(false);
+        (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
-            this->registers[A] ^= this->getHL();
-            (this->registers[A] == 0) ? setZ(true) : setZ(false);
+            this->registers[A] ^= this->addressBus[this->getHL()];
+            (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
         }
         else {
             this->registers[A] ^= this->registers[r];
-            (this->registers[A] == 0) ? setZ(true) : setZ(false);
+            (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
         }
     }
 }
 
-void CPU::Handle_10_Opcodes(uint8_t instruction) {
-    std::cout << "In Add";
+void CPU::OR(uint8_t instruction) {
+    ;
 }
 
-void CPU::Handle_11_Opcodes(uint8_t instruction) {
-    std::cout << "In Add" << std::endl;
+void CPU::CP(uint8_t instruction) {
+    ;
+}
+
+void CPU::debug() {
+    printf("REGS: \nA: %X F: %X\nB: %X C: %X\nD: %X E: %X\nH: %X L: %X\nPC: %X\nSP: %X\n", 
+        this->registers[A], this->registers[F], this->registers[B], this->registers[C],
+        this->registers[D], this->registers[E], this->registers[H], this->registers[L],
+        this->PC, this->SP);
+}
+
+void x(...) {
+    ;
 }
 
 void CPU::nop(uint8_t instruction) {
@@ -456,46 +534,46 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0X7D, &CPU::LD_R_to_R},
     {0X7E, &CPU::LD_R_to_R},
     {0X7F, &CPU::LD_R_to_R},
-    {0X80, &CPU::nop},
-    {0X81, &CPU::nop},
-    {0X82, &CPU::nop},
-    {0X83, &CPU::nop},
-    {0X84, &CPU::nop},
-    {0X85, &CPU::nop},
-    {0X86, &CPU::nop},
-    {0X87, &CPU::nop},
-    {0X88, &CPU::nop},
-    {0X89, &CPU::nop},
-    {0X8A, &CPU::nop},
-    {0X8B, &CPU::nop},
-    {0X8C, &CPU::nop},
-    {0X8D, &CPU::nop},
-    {0X8E, &CPU::nop},
-    {0X8F, &CPU::nop},
-    {0X90, &CPU::nop},
-    {0X91, &CPU::nop},
-    {0X92, &CPU::nop},
-    {0X93, &CPU::nop},
-    {0X94, &CPU::nop},
-    {0X95, &CPU::nop},
-    {0X96, &CPU::nop},
-    {0X97, &CPU::nop},
-    {0X98, &CPU::nop},
-    {0X99, &CPU::nop},
-    {0X9A, &CPU::nop},
-    {0X9B, &CPU::nop},
-    {0X9C, &CPU::nop},
-    {0X9D, &CPU::nop},
-    {0X9E, &CPU::nop},
-    {0X9F, &CPU::nop},
-    {0XA0, &CPU::nop},
-    {0XA1, &CPU::nop},
-    {0XA2, &CPU::nop},
-    {0XA3, &CPU::nop},
-    {0XA4, &CPU::nop},
-    {0XA5, &CPU::nop},
-    {0XA6, &CPU::nop},
-    {0XA7, &CPU::nop},
+    {0X80, &CPU::ADD},
+    {0X81, &CPU::ADD},
+    {0X82, &CPU::ADD},
+    {0X83, &CPU::ADD},
+    {0X84, &CPU::ADD},
+    {0X85, &CPU::ADD},
+    {0X86, &CPU::ADD},
+    {0X87, &CPU::ADD},
+    {0X88, &CPU::ADC},
+    {0X89, &CPU::ADC},
+    {0X8A, &CPU::ADC},
+    {0X8B, &CPU::ADC},
+    {0X8C, &CPU::ADC},
+    {0X8D, &CPU::ADC},
+    {0X8E, &CPU::ADC},
+    {0X8F, &CPU::ADC},
+    {0X90, &CPU::SUB},
+    {0X91, &CPU::SUB},
+    {0X92, &CPU::SUB},
+    {0X93, &CPU::SUB},
+    {0X94, &CPU::SUB},
+    {0X95, &CPU::SUB},
+    {0X96, &CPU::SUB},
+    {0X97, &CPU::SUB},
+    {0X98, &CPU::SBC},
+    {0X99, &CPU::SBC},
+    {0X9A, &CPU::SBC},
+    {0X9B, &CPU::SBC},
+    {0X9C, &CPU::SBC},
+    {0X9D, &CPU::SBC},
+    {0X9E, &CPU::SBC},
+    {0X9F, &CPU::SBC},
+    {0XA0, &CPU::AND},
+    {0XA1, &CPU::AND},
+    {0XA2, &CPU::AND},
+    {0XA3, &CPU::AND},
+    {0XA4, &CPU::AND},
+    {0XA5, &CPU::AND},
+    {0XA6, &CPU::AND},
+    {0XA7, &CPU::AND},
     {0XA8, &CPU::XOR},
     {0XA9, &CPU::XOR},
     {0XAA, &CPU::XOR},
@@ -504,29 +582,29 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XAD, &CPU::XOR},
     {0XAE, &CPU::XOR},
     {0XAF, &CPU::XOR},
-    {0XB0, &CPU::nop},
-    {0XB1, &CPU::nop},
-    {0XB2, &CPU::nop},
-    {0XB3, &CPU::nop},
-    {0XB4, &CPU::nop},
-    {0XB5, &CPU::nop},
-    {0XB6, &CPU::nop},
-    {0XB7, &CPU::nop},
-    {0XB8, &CPU::nop},
-    {0XB9, &CPU::nop},
-    {0XBA, &CPU::nop},
-    {0XBB, &CPU::nop},
-    {0XBC, &CPU::nop},
-    {0XBD, &CPU::nop},
-    {0XBE, &CPU::nop},
-    {0XBF, &CPU::nop},
+    {0XB0, &CPU::OR},
+    {0XB1, &CPU::OR},
+    {0XB2, &CPU::OR},
+    {0XB3, &CPU::OR},
+    {0XB4, &CPU::OR},
+    {0XB5, &CPU::OR},
+    {0XB6, &CPU::OR},
+    {0XB7, &CPU::OR},
+    {0XB8, &CPU::CP},
+    {0XB9, &CPU::CP},
+    {0XBA, &CPU::CP},
+    {0XBB, &CPU::CP},
+    {0XBC, &CPU::CP},
+    {0XBD, &CPU::CP},
+    {0XBE, &CPU::CP},
+    {0XBF, &CPU::CP},
     {0XC0, &CPU::nop},
     {0XC1, &CPU::nop},
     {0XC2, &CPU::nop},
     {0XC3, &CPU::nop},
     {0XC4, &CPU::nop},
     {0XC5, &CPU::nop},
-    {0XC6, &CPU::nop},
+    {0XC6, &CPU::ADD},
     {0XC7, &CPU::nop},
     {0XC8, &CPU::nop},
     {0XC9, &CPU::nop},
@@ -534,7 +612,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XCB, &CPU::nop},
     {0XCC, &CPU::nop},
     {0XCD, &CPU::nop},
-    {0XCE, &CPU::nop},
+    {0XCE, &CPU::ADC},
     {0XCF, &CPU::nop},
     {0XD0, &CPU::nop},
     {0XD1, &CPU::nop},
@@ -542,7 +620,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XD3, &CPU::nop},
     {0XD4, &CPU::nop},
     {0XD5, &CPU::nop},
-    {0XD6, &CPU::nop},
+    {0XD6, &CPU::SUB},
     {0XD7, &CPU::nop},
     {0XD8, &CPU::nop},
     {0XD9, &CPU::nop},
@@ -550,7 +628,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XDB, &CPU::nop},
     {0XDC, &CPU::nop},
     {0XDD, &CPU::nop},
-    {0XDE, &CPU::nop},
+    {0XDE, &CPU::SBC},
     {0XDF, &CPU::nop},
     {0XE0, &CPU::nop},
     {0XE1, &CPU::nop},
@@ -558,7 +636,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XE3, &CPU::nop},
     {0XE4, &CPU::nop},
     {0XE5, &CPU::nop},
-    {0XE6, &CPU::nop},
+    {0XE6, &CPU::AND},
     {0XE7, &CPU::nop},
     {0XE8, &CPU::nop},
     {0XE9, &CPU::nop},
@@ -574,7 +652,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XF3, &CPU::nop},
     {0XF4, &CPU::nop},
     {0XF5, &CPU::nop},
-    {0XF6, &CPU::nop},
+    {0XF6, &CPU::OR},
     {0XF7, &CPU::nop},
     {0XF8, &CPU::nop},
     {0XF9, &CPU::nop},
@@ -582,7 +660,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XFB, &CPU::nop},
     {0XFC, &CPU::nop},
     {0XFD, &CPU::nop},
-    {0XFE, &CPU::nop},
+    {0XFE, &CPU::CP},
     {0XFF, &CPU::nop},
 };
 

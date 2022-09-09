@@ -8,11 +8,11 @@ class Machine;
 
 class CPU {
 public:
-    typedef void (CPU::* functionPointer)(uint8_t );
+    typedef void (CPU::* functionPointer)(uint8_t);
 
-    CPU(Machine* );
+    CPU(Machine*);
     void step();
-    void execute(uint8_t );
+    void execute(uint8_t);
 
 private:
     enum Register
@@ -27,33 +27,39 @@ private:
         L = 5
     };
 
-    void loadBIOS(uint16_t );
+    void loadBIOS(uint16_t);
     void run();
-    void nop(uint8_t);
-    void LD_R_to_R(uint8_t );
-    void LD_8_Bit(uint8_t);
-    void LD_16_Bit(uint8_t );
-    void XOR(uint8_t );
-
     
-    void Handle_10_Opcodes(uint8_t );
-    void Handle_11_Opcodes(uint8_t );
+    // OpCode implementation functions
+    void nop(uint8_t);
+    void LD_R_to_R(uint8_t);
+    void LD_8_Bit(uint8_t);
+    void LD_16_Bit(uint8_t);
+    void ADD(uint8_t);
+    void ADC(uint8_t);
+    void SUB(uint8_t);
+    void SBC(uint8_t);
+    void AND(uint8_t);
+    void XOR(uint8_t);
+    void OR(uint8_t);
+    void CP(uint8_t);
+    void debug();
 
-    //Register helper functions
+    // Register helper functions
     uint16_t getAF();
     uint16_t getBC();
     uint16_t getDE();
     uint16_t getHL();
 
-    void setAF(uint8_t, uint8_t );
-    void setBC(uint8_t, uint8_t );
-    void setDE(uint8_t, uint8_t );
-    void setHL(uint8_t, uint8_t );
+    void setAF(uint8_t, uint8_t);
+    void setBC(uint8_t, uint8_t);
+    void setDE(uint8_t, uint8_t);
+    void setHL(uint8_t, uint8_t);
 
-    void setAF(uint16_t );
-    void setBC(uint16_t );
-    void setDE(uint16_t );
-    void setHL(uint16_t );
+    void setAF(uint16_t);
+    void setBC(uint16_t);
+    void setDE(uint16_t);
+    void setHL(uint16_t);
 
     void setC(bool );
     void setH(bool );
