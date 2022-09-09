@@ -11,12 +11,13 @@ CPU::CPU(Machine* machine) {
     //this->loadBIOS(0);
 
     this->addressBus[0] = 0x80;
-    this->registers[A] = 0x3C;
+    this->addressBus[1] = 0x8B;
+    this->registers[A] = 0xE2;
     this->registers[F] = 0x00;
-    this->registers[B] = 0x12;
+    this->registers[B] = 0xFF;
     this->registers[C] = 0x01;
     this->registers[D] = 0x01;
-    this->registers[E] = 0x01;
+    this->registers[E] = 0x1e;
     this->registers[H] = 0x01;
     this->registers[L] = 0x01;
     this->run();
@@ -247,7 +248,50 @@ void CPU::ADD(uint8_t instruction) {
 }
 
 void CPU::ADC(uint8_t instruction) {
-    ;
+    std::cout << "ADC A " << std::endl;
+
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    uint8_t rVal = this->registers[A];
+    if (encoding == 0x03) {
+        uint8_t nVal = this->addressBus[++(this->PC)];
+
+        // Calculate if Half-Carry flag needs to be set
+        (((nVal & 0x0F) + (rVal & 0x0F) + this->getC()) > 0x0F) ? this->setH(true) : this->setH(false);
+        // Perform addition to A register
+        this->registers[A] += nVal + this->getC();
+        // Calculate if Full-Carry flag needs to be set
+        (this->registers[A] < nVal || this->registers[A] < rVal) ? this->setC(true) : this->setC(false);
+        // Calculate if Zero flag needs to be set
+        (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            uint8_t nVal = this->addressBus[this->getHL()];
+
+            // Calculate if Half-Carry flag needs to be set
+            (((nVal & 0x0F) + (rVal & 0x0F) + this->getC()) > 0x0F) ? this->setH(true) : this->setH(false);
+            // Perform addition to A register
+            this->registers[A] += nVal + this->getC();
+            // Calculate if Full-Carry flag needs to be set
+            (this->registers[A] < nVal || this->registers[A] < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Zero flag needs to be set
+            (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+        }
+        else {
+            uint8_t nVal = this->registers[r];
+
+            // Calculate if Half-Carry flag needs to be set
+            (((nVal & 0x0F) + (rVal & 0x0F) + this->getC()) > 0x0F) ? this->setH(true) : this->setH(false);
+            // Perform addition to A register
+            this->registers[A] += nVal + this->getC();
+            // Calculate if Full-Carry flag needs to be set
+            (this->registers[A] < nVal || this->registers[A] < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Zero flag needs to be set
+            (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+        }
+    }
+    this->setN(false);
 }
 
 void CPU::SUB(uint8_t instruction) {
@@ -342,32 +386,49 @@ void CPU::setHL(uint8_t hVal, uint8_t lVal) {
 }
 
 void CPU::setAF(uint16_t value) {
-    uint8_t hVal = uint8_t(value >> 8);
-    uint8_t lVal = uint8_t(value & 0x00FF);
+    uint8_t hVal = (uint8_t)value >> 8;
+    uint8_t lVal = (uint8_t)value & 0x00FF;
     this->registers[A] = hVal;
     this->registers[F] = lVal;
 }
 
 void CPU::setBC(uint16_t value) {
-    uint8_t hVal = uint8_t(value >> 8);
-    uint8_t lVal = uint8_t(value & 0x00FF);
+    uint8_t hVal = (uint8_t)value >> 8;
+    uint8_t lVal = (uint8_t)value & 0x00FF;
     this->registers[B] = hVal;
     this->registers[C] = lVal;
 }
 
 void CPU::setDE(uint16_t value) {
-    uint8_t hVal = uint8_t(value >> 8);
-    uint8_t lVal = uint8_t(value & 0x00FF);
+    uint8_t hVal = (uint8_t)value >> 8;
+    uint8_t lVal = (uint8_t)value & 0x00FF;
     this->registers[D] = hVal;
     this->registers[E] = lVal;
 }
 
 void CPU::setHL(uint16_t value) {
-    uint8_t hVal = uint8_t(value >> 8);
-    uint8_t lVal = uint8_t(value & 0x00FF);
+    uint8_t hVal = (uint8_t)value >> 8;
+    uint8_t lVal = (uint8_t)value & 0x00FF;
     this->registers[H] = hVal;
     this->registers[L] = lVal;
 }
+
+bool CPU::getC() {
+    return this->registers[F] & 0b00010000;
+}
+
+bool CPU::getH() {
+    return this->registers[F] & 0b00100000;
+}
+
+bool CPU::getN() {
+    return this->registers[F] & 0b01000000;
+}
+
+bool CPU::getZ() {
+    return this->registers[F] & 0b10000000;
+}
+
 
 void CPU::setC(bool val) {
     if (val == true) {

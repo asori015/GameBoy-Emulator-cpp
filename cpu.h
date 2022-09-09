@@ -61,6 +61,11 @@ private:
     void setDE(uint16_t);
     void setHL(uint16_t);
 
+    bool getC();
+    bool getH();
+    bool getN();
+    bool getZ();
+
     void setC(bool );
     void setH(bool );
     void setN(bool );
