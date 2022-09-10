@@ -334,7 +334,29 @@ void CPU::SBC(uint8_t instruction) {
 }
 
 void CPU::AND(uint8_t instruction) {
-    ;
+    std::cout << "AND A " << std::endl;
+
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    if (encoding == 0x03) {
+        uint8_t nVal = this->addressBus[++(this->PC)];
+        this->registers[A] &= nVal;
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            this->registers[A] &= this->addressBus[this->getHL()];
+        }
+        else {
+            this->registers[A] &= this->registers[r];
+        }
+    }
+
+    // Calculate if Zero flag needs to be set
+    (this->registers[A] == 0) ? this->setZ(true) : this->setZ(false);
+    // Set C and N flags to 0, H flag to 1
+    this->setC(false);
+    this->setH(true);
+    this->setN(false);
 }
 
 void CPU::XOR(uint8_t instruction) {
@@ -452,22 +474,22 @@ void CPU::setAF(uint16_t value) {
 }
 
 void CPU::setBC(uint16_t value) {
-    uint8_t hVal = (uint8_t)value >> 8;
-    uint8_t lVal = (uint8_t)value & 0x00FF;
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
     this->registers[B] = hVal;
     this->registers[C] = lVal;
 }
 
 void CPU::setDE(uint16_t value) {
-    uint8_t hVal = (uint8_t)value >> 8;
-    uint8_t lVal = (uint8_t)value & 0x00FF;
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
     this->registers[D] = hVal;
     this->registers[E] = lVal;
 }
 
 void CPU::setHL(uint16_t value) {
-    uint8_t hVal = (uint8_t)value >> 8;
-    uint8_t lVal = (uint8_t)value & 0x00FF;
+    uint8_t hVal = uint8_t(value >> 8);
+    uint8_t lVal = uint8_t(value & 0x00FF);
     this->registers[H] = hVal;
     this->registers[L] = lVal;
 }
@@ -487,7 +509,6 @@ bool CPU::getN() {
 bool CPU::getZ() {
     return this->registers[F] & 0b10000000;
 }
-
 
 void CPU::setC(bool val) {
     if (val == true) {
