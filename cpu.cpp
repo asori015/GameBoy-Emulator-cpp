@@ -8,18 +8,19 @@ CPU::CPU(Machine* machine) {
     this->machine = machine;
     this->PC = 0;
     this->SP = 0;
-    //this->loadBIOS(0);
+    this->debug = true;
+    this->loadBIOS(0);
 
-    this->addressBus[0] = 0x93;
+    //this->addressBus[0] = 0x93;
     // this->addressBus[1] = 0x8B;
-    this->registers[A] = 0x3e;
-    this->registers[F] = 0x00;
-    this->registers[B] = 0x01;
-    this->registers[C] = 0x01;
-    this->registers[D] = 0x01;
-    this->registers[E] = 0x40;
-    this->registers[H] = 0x01;
-    this->registers[L] = 0x01;
+    //this->registers[A] = 0x3e;
+    //this->registers[F] = 0x00;
+    //this->registers[B] = 0x01;
+    //this->registers[C] = 0x01;
+    //this->registers[D] = 0x01;
+    //this->registers[E] = 0x40;
+    //this->registers[H] = 0x01;
+    //this->registers[L] = 0x01;
     this->run();
 
     //this->step();
@@ -44,8 +45,7 @@ void CPU::run() {
 void CPU::step() {
     uint8_t instruction = this->addressBus[this->PC];
     execute(instruction);
-    debug();
-    //std::cout << "In Step";
+    if (debug) { this->printRegs(); }
 }
 
 void CPU::execute(uint8_t instruction) {
@@ -57,26 +57,29 @@ void CPU::execute(uint8_t instruction) {
 void CPU::LD_R_to_R(uint8_t instruction) {
     uint8_t r1 = instruction & 0x07;
     uint8_t r2 = (instruction & 0x38) >> 3;
+
     if (r1 == 0x06) {
         if (r2 == 0x06) {
             // HALT INSTRUCTION
         }
         else {
+            if (debug) { printf("LD (HL) to %c\n", regNames[r2]); }
             this->registers[r2] = this->addressBus[this->getHL()];
-            //std::cout << "In Load: " << int(this->registers[r2]) << " -> " << int(this->registers->HL()) << std::endl;
         }
     }
     else if (r2 == 0x06) {
+        if (debug) { printf("LD %c to (HL)\n", regNames[r1]); }
         this->addressBus[this->getHL()] = this->registers[r1];
-        //std::cout << "In Load: " << int(this->registers[r2]) << " -> " << int(r2) << std::endl;
     }
     else {
+        if (debug) { printf("LD %c to %c\n", regNames[r1], regNames[r2]); }
         this->registers[r2] = this->registers[r1];
-        //std::cout << "In Load: " << int(r1) << " -> " << int(r2) << std::endl;
     }
 }
 
 void CPU::LD_8_Bit(uint8_t instruction) {
+    std::cout << "LD 8 Bit" << std::endl;
+
     uint8_t r1 = instruction & 0x07;
     uint8_t r2 = (instruction & 0x38) >> 3;
     /*if (r1 == 0x01) {
@@ -183,17 +186,20 @@ void CPU::LD_16_Bit(uint8_t instruction) {
     switch (encoding)
     {
     case 0x00:
+        if (debug) { printf("LD 16bit to BC\n"); }
         this->setBC(hVal, lVal);
         break;
     case 0x01:
+        if (debug) { printf("LD 16bit to DE\n"); }
         this->setDE(hVal, lVal);
         break;
     case 0x02:
+        if (debug) { printf("LD 16bit to HL\n"); }
         this->setHL(hVal, lVal);
         break;
     case 0x03:
+        if (debug) { printf("LD 16bit to SP\n"); }
         this->SP = (hVal << 8) + lVal;
-        //std::cout << "SP = " << std::hex << int(this->SP) << std::endl;
         break;
     default:
         break;
@@ -320,8 +326,11 @@ void CPU::SBC(uint8_t instruction) {
         }
     }
 
+
+    // This math is not working, needs a rewrite
+    // nVal += this->getC()
+
     // Calculate if Half-Carry flag needs to be set
-    // this is incorrect
     ((nVal & 0x0F) + this->getC() > (rVal & 0x0F)) ? this->setH(true) : this->setH(false);
     // Perform subtraction to A register
     this->registers[A] -= nVal + this->getC();
@@ -442,15 +451,62 @@ void CPU::CP(uint8_t instruction) {
     this->setN(true);
 }
 
-void CPU::debug() {
-    printf("REGS: \nA: %X F: %X\nB: %X C: %X\nD: %X E: %X\nH: %X L: %X\nPC: %X\nSP: %X\n", 
+void CPU::CBPrefix(uint8_t instruction) {
+    if (debug) { printf("CB Prefix\n"); }
+    instruction = this->addressBus[++(this->PC)];
+    (this->*InstructionMethods2[instruction])(instruction);
+    this->PC += 1;
+}
+
+void CPU::RLC(uint8_t instruction) {
+    ;
+}
+
+void CPU::RRC(uint8_t instruction) {
+    ;
+}
+
+void CPU::RL(uint8_t instruction) {
+    ;
+}
+
+void CPU::RR(uint8_t instruction) {
+    ;
+}
+
+void CPU::SLA(uint8_t instruction) {
+    ;
+}
+
+void CPU::SRA(uint8_t instruction) {
+    ;
+}
+
+void CPU::SWAP(uint8_t instruction) {
+    ;
+}
+
+void CPU::SRL(uint8_t instruction) {
+    ;
+}
+
+void CPU::BIT(uint8_t instruction) {
+    ;
+}
+
+void CPU::RES(uint8_t instruction) {
+    ;
+}
+
+void CPU::SET(uint8_t instruction) {
+    ;
+}
+
+void CPU::printRegs() {
+    printf("REGS: \nA: %X F: %X\nB: %X C: %X\nD: %X E: %X\nH: %X L: %X\nPC: %X\nSP: %X\n\n", 
         this->registers[A], this->registers[F], this->registers[B], this->registers[C],
         this->registers[D], this->registers[E], this->registers[H], this->registers[L],
         this->PC, this->SP);
-}
-
-void x(...) {
-    ;
 }
 
 void CPU::nop(uint8_t instruction) {
@@ -777,7 +833,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XC8, &CPU::nop},
     {0XC9, &CPU::nop},
     {0XCA, &CPU::nop},
-    {0XCB, &CPU::nop},
+    {0XCB, &CPU::CBPrefix},
     {0XCC, &CPU::nop},
     {0XCD, &CPU::nop},
     {0XCE, &CPU::ADC},
@@ -1025,68 +1081,68 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods2 = {
     {0XBD, &CPU::nop},
     {0XBE, &CPU::nop},
     {0XBF, &CPU::nop},
-    {0XC0, &CPU::nop},
-    {0XC1, &CPU::nop},
-    {0XC2, &CPU::nop},
-    {0XC3, &CPU::nop},
-    {0XC4, &CPU::nop},
-    {0XC5, &CPU::nop},
-    {0XC6, &CPU::nop},
-    {0XC7, &CPU::nop},
-    {0XC8, &CPU::nop},
-    {0XC9, &CPU::nop},
-    {0XCA, &CPU::nop},
-    {0XCB, &CPU::nop},
-    {0XCC, &CPU::nop},
-    {0XCD, &CPU::nop},
-    {0XCE, &CPU::nop},
-    {0XCF, &CPU::nop},
-    {0XD0, &CPU::nop},
-    {0XD1, &CPU::nop},
-    {0XD2, &CPU::nop},
-    {0XD3, &CPU::nop},
-    {0XD4, &CPU::nop},
-    {0XD5, &CPU::nop},
-    {0XD6, &CPU::nop},
-    {0XD7, &CPU::nop},
-    {0XD8, &CPU::nop},
-    {0XD9, &CPU::nop},
-    {0XDA, &CPU::nop},
-    {0XDB, &CPU::nop},
-    {0XDC, &CPU::nop},
-    {0XDD, &CPU::nop},
-    {0XDE, &CPU::nop},
-    {0XDF, &CPU::nop},
-    {0XE0, &CPU::nop},
-    {0XE1, &CPU::nop},
-    {0XE2, &CPU::nop},
-    {0XE3, &CPU::nop},
-    {0XE4, &CPU::nop},
-    {0XE5, &CPU::nop},
-    {0XE6, &CPU::nop},
-    {0XE7, &CPU::nop},
-    {0XE8, &CPU::nop},
-    {0XE9, &CPU::nop},
-    {0XEA, &CPU::nop},
-    {0XEB, &CPU::nop},
-    {0XEC, &CPU::nop},
-    {0XED, &CPU::nop},
-    {0XEE, &CPU::nop},
-    {0XEF, &CPU::nop},
-    {0XF0, &CPU::nop},
-    {0XF1, &CPU::nop},
-    {0XF2, &CPU::nop},
-    {0XF3, &CPU::nop},
-    {0XF4, &CPU::nop},
-    {0XF5, &CPU::nop},
-    {0XF6, &CPU::nop},
-    {0XF7, &CPU::nop},
-    {0XF8, &CPU::nop},
-    {0XF9, &CPU::nop},
-    {0XFA, &CPU::nop},
-    {0XFB, &CPU::nop},
-    {0XFC, &CPU::nop},
-    {0XFD, &CPU::nop},
-    {0XFE, &CPU::nop},
-    {0XFF, &CPU::nop},
+    {0XC0, &CPU::SET},
+    {0XC1, &CPU::SET},
+    {0XC2, &CPU::SET},
+    {0XC3, &CPU::SET},
+    {0XC4, &CPU::SET},
+    {0XC5, &CPU::SET},
+    {0XC6, &CPU::SET},
+    {0XC7, &CPU::SET},
+    {0XC8, &CPU::SET},
+    {0XC9, &CPU::SET},
+    {0XCA, &CPU::SET},
+    {0XCB, &CPU::SET},
+    {0XCC, &CPU::SET},
+    {0XCD, &CPU::SET},
+    {0XCE, &CPU::SET},
+    {0XCF, &CPU::SET},
+    {0XD0, &CPU::SET},
+    {0XD1, &CPU::SET},
+    {0XD2, &CPU::SET},
+    {0XD3, &CPU::SET},
+    {0XD4, &CPU::SET},
+    {0XD5, &CPU::SET},
+    {0XD6, &CPU::SET},
+    {0XD7, &CPU::SET},
+    {0XD8, &CPU::SET},
+    {0XD9, &CPU::SET},
+    {0XDA, &CPU::SET},
+    {0XDB, &CPU::SET},
+    {0XDC, &CPU::SET},
+    {0XDD, &CPU::SET},
+    {0XDE, &CPU::SET},
+    {0XDF, &CPU::SET},
+    {0XE0, &CPU::SET},
+    {0XE1, &CPU::SET},
+    {0XE2, &CPU::SET},
+    {0XE3, &CPU::SET},
+    {0XE4, &CPU::SET},
+    {0XE5, &CPU::SET},
+    {0XE6, &CPU::SET},
+    {0XE7, &CPU::SET},
+    {0XE8, &CPU::SET},
+    {0XE9, &CPU::SET},
+    {0XEA, &CPU::SET},
+    {0XEB, &CPU::SET},
+    {0XEC, &CPU::SET},
+    {0XED, &CPU::SET},
+    {0XEE, &CPU::SET},
+    {0XEF, &CPU::SET},
+    {0XF0, &CPU::SET},
+    {0XF1, &CPU::SET},
+    {0XF2, &CPU::SET},
+    {0XF3, &CPU::SET},
+    {0XF4, &CPU::SET},
+    {0XF5, &CPU::SET},
+    {0XF6, &CPU::SET},
+    {0XF7, &CPU::SET},
+    {0XF8, &CPU::SET},
+    {0XF9, &CPU::SET},
+    {0XFA, &CPU::SET},
+    {0XFB, &CPU::SET},
+    {0XFC, &CPU::SET},
+    {0XFD, &CPU::SET},
+    {0XFE, &CPU::SET},
+    {0XFF, &CPU::SET},
 };

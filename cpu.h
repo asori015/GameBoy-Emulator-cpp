@@ -29,7 +29,7 @@ private:
 
     void loadBIOS(uint16_t);
     void run();
-    
+
     // OpCode implementation functions
     void nop(uint8_t);
     void LD_R_to_R(uint8_t);
@@ -43,7 +43,19 @@ private:
     void XOR(uint8_t);
     void OR(uint8_t);
     void CP(uint8_t);
-    void debug();
+    void CBPrefix(uint8_t);
+    void RLC(uint8_t);
+    void RRC(uint8_t);
+    void RL(uint8_t);
+    void RR(uint8_t);
+    void SLA(uint8_t);
+    void SRA(uint8_t);
+    void SWAP(uint8_t);
+    void SRL(uint8_t);
+    void BIT(uint8_t);
+    void RES(uint8_t);
+    void SET(uint8_t);
+    void printRegs();
 
     // Register helper functions
     uint16_t getAF();
@@ -66,10 +78,10 @@ private:
     bool getN();
     bool getZ();
 
-    void setC(bool );
-    void setH(bool );
-    void setN(bool );
-    void setZ(bool );
+    void setC(bool);
+    void setH(bool);
+    void setN(bool);
+    void setZ(bool);
 
     Machine* machine;
     uint8_t* registers = new uint8_t[8]{ 0 };
@@ -79,4 +91,7 @@ private:
     uint16_t PC;
     uint16_t SP;
     bool isHalted = false;
+    // Only for debug print statements
+    bool debug = false;
+    const char regNames[8] = {'B', 'C', 'D', 'E', 'H', 'L', 'F', 'A'};
 };
