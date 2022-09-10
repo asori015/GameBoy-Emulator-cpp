@@ -52,10 +52,10 @@ Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath
         }
 
         // Debug GameROM values to console screen
-        std::cout << "Cartridge type = " << (int)cartridgeType
-                  << ", ramkey = " << (int)buffer[0x149] 
-                  << ", Color? " << usingColor
-                  << " (Compatibility? " << monochromeCompatibility << ")" << std::endl;
+        //std::cout << "Cartridge type = " << (int)cartridgeType
+        //          << ", ramkey = " << (int)buffer[0x149] 
+        //          << ", Color? " << usingColor
+        //          << " (Compatibility? " << monochromeCompatibility << ")" << std::endl;
 
         switch (cartridgeType) {
         case 0:

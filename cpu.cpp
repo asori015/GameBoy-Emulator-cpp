@@ -499,7 +499,19 @@ void CPU::RES(uint8_t instruction) {
 }
 
 void CPU::SET(uint8_t instruction) {
-    ;
+    uint8_t r = instruction & 0x07;
+    uint8_t n = (instruction & 0x38) >> 3;
+
+    uint8_t mask = 0x01 << n;
+
+    if (r == 0x06) {
+        if (debug) { printf("SET bit %d in (HL)\n", n); }
+        this->addressBus[this->getHL()] |= mask;
+    }
+    else {
+        if (debug) { printf("SET bit %d in %c\n", n, regNames[r]); }
+        this->registers[r] |= mask;
+    }
 }
 
 void CPU::printRegs() {
