@@ -412,7 +412,34 @@ void CPU::OR(uint8_t instruction) {
 }
 
 void CPU::CP(uint8_t instruction) {
-    ;
+    std::cout << "CP A " << std::endl;
+
+    uint8_t encoding = (instruction & 0b11000000) >> 6;
+    uint8_t rVal = this->registers[A];
+    uint8_t nVal;
+
+    // Get the value being used for the calculation with Register A
+    if (encoding == 0x03) {
+        nVal = this->addressBus[++(this->PC)];
+    }
+    else {
+        uint8_t r = instruction & 0b00000111;
+        if (r == 0x06) {
+            nVal = this->addressBus[this->getHL()];
+        }
+        else {
+            nVal = this->registers[r];
+        }
+    }
+
+    // Calculate if Half-Carry flag needs to be set
+    (nVal < rVal) ? this->setH(true) : this->setH(false);
+    // Calculate if Full-Carry flag needs to be set
+    (nVal > rVal) ? this->setC(true) : this->setC(false);
+    // Calculate if Zero flag needs to be set
+    (nVal == rVal) ? this->setZ(true) : this->setZ(false);
+
+    this->setN(true);
 }
 
 void CPU::debug() {
