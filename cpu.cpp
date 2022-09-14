@@ -9,7 +9,7 @@ CPU::CPU(Machine* machine) {
     this->PC = 0;
     this->SP = 0;
     this->debug = true;
-    this->loadBIOS(0);
+    //this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
 
     //this->addressBus[0] = 0x93;
     // this->addressBus[1] = 0x8B;
@@ -21,14 +21,13 @@ CPU::CPU(Machine* machine) {
     //this->registers[E] = 0x40;
     //this->registers[H] = 0x01;
     //this->registers[L] = 0x01;
-    this->run();
+    //this->run();
 
     //this->step();
 }
 
-void CPU::loadBIOS(uint16_t address) {
-    const uint8_t* ROM = BootROMs::BIOS_DMG;
-    for (uint16_t i = 0; i < 256; i++) {
+void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
+    for (uint16_t i = 0; i < size; i++) {
         addressBus[address + i] = ROM[i];
     }
 }
@@ -171,10 +170,10 @@ void CPU::LD_8_Bit(uint8_t instruction) {
     }
     else if (r1 == 0x06) {
         if (r2 == 0x06) {
-            this->addressBus[this->getHL()] = this->addressBus[this->PC];
+            this->addressBus[this->getHL()] = this->addressBus[++(this->PC)];
         }
         else {
-            this->registers[r2] = this->addressBus[this->PC];
+            this->registers[r2] = this->addressBus[++(this->PC)];
         }
     }
 }
@@ -204,6 +203,21 @@ void CPU::LD_16_Bit(uint8_t instruction) {
     default:
         break;
     }
+}
+
+void CPU::JP(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+
+
+    if (r1 == 0x01) {
+        ;
+    }
+    else if (r1 == 0x02) {
+        ;
+    }
+
+
 }
 
 void CPU::ADD(uint8_t instruction) {
@@ -569,6 +583,10 @@ uint16_t CPU::getDE() {
 
 uint16_t CPU::getHL() {
     return (this->registers[H] << 8) + this->registers[L];
+}
+
+uint16_t CPU::getSP() {
+    return this->SP;
 }
 
 void CPU::setAF(uint8_t hVal, uint8_t lVal) {

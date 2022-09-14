@@ -11,9 +11,24 @@ public:
     typedef void (CPU::* functionPointer)(uint8_t);
 
     CPU(Machine*);
+    void loadBIOS(const uint8_t*, int, uint16_t);
     void step();
     void execute(uint8_t);
+    void printRegs();
 
+    // Getter Functions for Register
+    uint16_t getAF();
+    uint16_t getBC();
+    uint16_t getDE();
+    uint16_t getHL();
+    uint16_t getSP();
+
+    bool getC();
+    bool getH();
+    bool getN();
+    bool getZ();
+
+    uint8_t* addressBus = new uint8_t[0xFFFF]{ 0 };
 private:
     enum Register
     {
@@ -26,8 +41,6 @@ private:
         H = 4,
         L = 5
     };
-
-    void loadBIOS(uint16_t);
     void run();
 
     // OpCode implementation functions
@@ -35,6 +48,7 @@ private:
     void LD_R_to_R(uint8_t);
     void LD_8_Bit(uint8_t);
     void LD_16_Bit(uint8_t);
+    void JP(uint8_t);
     void ADD(uint8_t);
     void ADC(uint8_t);
     void SUB(uint8_t);
@@ -55,14 +69,8 @@ private:
     void BIT(uint8_t);
     void RES(uint8_t);
     void SET(uint8_t);
-    void printRegs();
 
     // Register helper functions
-    uint16_t getAF();
-    uint16_t getBC();
-    uint16_t getDE();
-    uint16_t getHL();
-
     void setAF(uint8_t, uint8_t);
     void setBC(uint8_t, uint8_t);
     void setDE(uint8_t, uint8_t);
@@ -73,11 +81,6 @@ private:
     void setDE(uint16_t);
     void setHL(uint16_t);
 
-    bool getC();
-    bool getH();
-    bool getN();
-    bool getZ();
-
     void setC(bool);
     void setH(bool);
     void setN(bool);
@@ -85,7 +88,6 @@ private:
 
     Machine* machine;
     uint8_t* registers = new uint8_t[8]{ 0 };
-    uint8_t* addressBus = new uint8_t[0xFFFF]{ 0 };
     static std::map<uint8_t, functionPointer> InstructionMethods1;
     static std::map<uint8_t, functionPointer> InstructionMethods2;
     uint16_t PC;

@@ -2,6 +2,7 @@
 #include <fstream>
 // #include "olcConsoleGameEngine.h"
 #include "machine.h"
+#include "test.h"
 
 #ifdef __APPLE_CC__
 #include <GLUT/glut.h>
@@ -66,6 +67,9 @@ void renderFrame() {
 }
 
 void run(int argc, char** argv){
+    // For testing and debugging purposes
+    Test* test = new Test();
+
     std::string ROMPath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     Machine* machine = new Machine(ROMPath, Machine::MachineModeEnum::GAMEBOY);
     //Screen* screen = new Screen(machine);
