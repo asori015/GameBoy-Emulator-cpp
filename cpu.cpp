@@ -12,7 +12,7 @@ CPU::CPU(Machine* machine) {
     //this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
 
     //this->addressBus[0] = 0x93;
-    // this->addressBus[1] = 0x8B;
+    //this->addressBus[1] = 0x8B;
     //this->registers[A] = 0x3e;
     //this->registers[F] = 0x00;
     //this->registers[B] = 0x01;
@@ -77,103 +77,106 @@ void CPU::LD_R_to_R(uint8_t instruction) {
 }
 
 void CPU::LD_8_Bit(uint8_t instruction) {
-    std::cout << "LD 8 Bit" << std::endl;
-
     uint8_t r1 = instruction & 0x07;
     uint8_t r2 = (instruction & 0x38) >> 3;
-    /*if (r1 == 0x01) {
-        switch (r2)
-        {
-        case 0x00:
-            this->AddressBus[this->registers->getBC()] = this->registers[A];
-            break;
-        case 0x01:
-            this->registers[A] = this->AddressBus[this->registers->getBC()];
-            break;
-        case 0x02:
-            this->AddressBus[this->registers->getDE()] = this->registers[A];
-            break;
-        case 0x03:
-            this->registers[A] = this->AddressBus[this->registers->getDE()];
-            break;
-        case 0x04:
-            this->AddressBus[hl] = this->registers[A];
-            hl += 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x05:
-            this->registers[A] = this->AddressBus[hl];
-            hl += 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x06:
-            this->AddressBus[hl] = this->registers[A];
-            hl -= 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x07:
-            this->registers[A] = this->AddressBus[hl];
-            hl -= 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        default:
-            break;
+
+    if (instruction > 0xC0) {
+        if (r1 == 0x00) {
+            switch (r2) {
+            case 0x04:
+                this->addressBus[0xFF00 + this->addressBus[++(this->PC)]] = this->registers[A];
+                if (debug) { printf("LD (FFd8), A\n"); }
+                break;
+            case 0x06:
+                this->registers[A] = this->addressBus[0xFF00 + this->addressBus[++(this->PC)]];
+                if (debug) { printf("LD A, (FFd8)\n"); }
+                break;
+            default:
+                break;
+            }
         }
-    }*/
-    if (r1 == 0x02) {
-        uint16_t hl = this->getHL();
-        switch (r2)
-        {
-        case 0x00:
-            this->addressBus[this->getBC()] = this->registers[A];
-            break;
-        case 0x01:
-            this->registers[A] = this->addressBus[this->getBC()];
-            break;
-        case 0x02:
-            this->addressBus[this->getDE()] = this->registers[A];
-            break;
-        case 0x03:
-            this->registers[A] = this->addressBus[this->getDE()];
-            break;
-        case 0x04:
-            this->addressBus[hl] = this->registers[A];
-            hl += 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x05:
-            this->registers[A] = this->addressBus[hl];
-            hl += 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x06:
-            this->addressBus[hl] = this->registers[A];
-            hl -= 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        case 0x07:
-            this->registers[A] = this->addressBus[hl];
-            hl -= 1;
-            this->registers[H] = uint8_t(hl >> 8);
-            this->registers[L] = uint8_t(hl & 0x00FF);
-            break;
-        default:
-            break;
+        else if(r1 == 0x02) {
+            uint16_t address;
+            switch (r2) {
+            case 0x04:
+                address = 0xFF00 + this->registers[C];
+                this->addressBus[address] = this->registers[A];
+                if (debug) { printf("LD (FF_C), A\n"); }
+                break;
+            case 0x05:
+                address = this->addressBus[++(this->PC)] + (this->addressBus[++(this->PC)] << 8);
+                this->addressBus[address] = this->registers[A];
+                if (debug) { printf("LD (d8d8), A\n"); }
+                break;
+            case 0x06:
+                address = 0xFF00 + this->registers[C];
+                this->registers[A] = this->addressBus[address];
+                if (debug) { printf("LD A, (FF_C)\n"); }
+                break;
+            case 0x07:
+                address = this->addressBus[++(this->PC)] + (this->addressBus[++(this->PC)] << 8);
+                this->registers[A] = this->addressBus[address];
+                if (debug) { printf("LD A, (d8d8)\n"); }
+                break;
+            default:
+                break;
+            }
         }
     }
-    else if (r1 == 0x06) {
-        if (r2 == 0x06) {
-            this->addressBus[this->getHL()] = this->addressBus[++(this->PC)];
+    else {
+        if (r1 == 0x02) {
+            uint16_t hl = this->getHL();
+            switch (r2)
+            {
+            case 0x00:
+                this->addressBus[this->getBC()] = this->registers[A];
+                if (debug) { printf("LD (BC), A\n"); }
+                break;
+            case 0x01:
+                this->registers[A] = this->addressBus[this->getBC()];
+                if (debug) { printf("LD A, (BC)\n"); }
+                break;
+            case 0x02:
+                this->addressBus[this->getDE()] = this->registers[A];
+                if (debug) { printf("LD (DE), A\n"); }
+                break;
+            case 0x03:
+                this->registers[A] = this->addressBus[this->getDE()];
+                if (debug) { printf("LD A, (DE)\n"); }
+                break;
+            case 0x04:
+                this->addressBus[hl] = this->registers[A];
+                this->setHL(hl + 1);
+                if (debug) { printf("LD (HL+), A\n"); }
+                break;
+            case 0x05:
+                this->registers[A] = this->addressBus[hl];
+                this->setHL(hl + 1);
+                if (debug) { printf("LD A, (HL+)\n"); }
+                break;
+            case 0x06:
+                this->addressBus[hl] = this->registers[A];
+                this->setHL(hl - 1);
+                if (debug) { printf("LD (HL-), A\n"); }
+                break;
+            case 0x07:
+                this->registers[A] = this->addressBus[hl];
+                this->setHL(hl - 1);
+                if (debug) { printf("LD A, (HL-)\n"); }
+                break;
+            default:
+                break;
+            }
         }
-        else {
-            this->registers[r2] = this->addressBus[++(this->PC)];
+        else if (r1 == 0x06) {
+            if (r2 == 0x06) {
+                this->addressBus[this->getHL()] = this->addressBus[++(this->PC)];
+                if (debug) { printf("LD (HL), d8\n"); }
+            }
+            else {
+                this->registers[r2] = this->addressBus[++(this->PC)];
+                if (debug) { printf("LD %c, d8\n", regNames[r2]); }
+            }
         }
     }
 }
@@ -182,6 +185,51 @@ void CPU::LD_16_Bit(uint8_t instruction) {
     uint8_t encoding = (instruction & 0b00110000) >> 4;
     uint8_t lVal = this->addressBus[++(this->PC)];
     uint8_t hVal = this->addressBus[++(this->PC)];
+
+    /*if (r1 == 0x01) {
+            switch (r2)
+            {
+            case 0x00:
+                this->AddressBus[this->registers->getBC()] = this->registers[A];
+                break;
+            case 0x01:
+                this->registers[A] = this->AddressBus[this->registers->getBC()];
+                break;
+            case 0x02:
+                this->AddressBus[this->registers->getDE()] = this->registers[A];
+                break;
+            case 0x03:
+                this->registers[A] = this->AddressBus[this->registers->getDE()];
+                break;
+            case 0x04:
+                this->AddressBus[hl] = this->registers[A];
+                hl += 1;
+                this->registers[H] = uint8_t(hl >> 8);
+                this->registers[L] = uint8_t(hl & 0x00FF);
+                break;
+            case 0x05:
+                this->registers[A] = this->AddressBus[hl];
+                hl += 1;
+                this->registers[H] = uint8_t(hl >> 8);
+                this->registers[L] = uint8_t(hl & 0x00FF);
+                break;
+            case 0x06:
+                this->AddressBus[hl] = this->registers[A];
+                hl -= 1;
+                this->registers[H] = uint8_t(hl >> 8);
+                this->registers[L] = uint8_t(hl & 0x00FF);
+                break;
+            case 0x07:
+                this->registers[A] = this->AddressBus[hl];
+                hl -= 1;
+                this->registers[H] = uint8_t(hl >> 8);
+                this->registers[L] = uint8_t(hl & 0x00FF);
+                break;
+            default:
+                break;
+            }
+        }*/
+
     switch (encoding)
     {
     case 0x00:
@@ -698,7 +746,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0X05, &CPU::nop},
     {0X06, &CPU::LD_8_Bit},
     {0X07, &CPU::nop},
-    {0X08, &CPU::nop},
+    {0X08, &CPU::LD_16_Bit},
     {0X09, &CPU::nop},
     {0X0A, &CPU::LD_8_Bit},
     {0X0B, &CPU::nop},
@@ -883,11 +931,11 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XBE, &CPU::CP},
     {0XBF, &CPU::CP},
     {0XC0, &CPU::nop},
-    {0XC1, &CPU::nop},
+    {0XC1, &CPU::LD_16_Bit},
     {0XC2, &CPU::nop},
     {0XC3, &CPU::nop},
     {0XC4, &CPU::nop},
-    {0XC5, &CPU::nop},
+    {0XC5, &CPU::LD_16_Bit},
     {0XC6, &CPU::ADD},
     {0XC7, &CPU::nop},
     {0XC8, &CPU::nop},
@@ -899,11 +947,11 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XCE, &CPU::ADC},
     {0XCF, &CPU::nop},
     {0XD0, &CPU::nop},
-    {0XD1, &CPU::nop},
+    {0XD1, &CPU::LD_16_Bit},
     {0XD2, &CPU::nop},
     {0XD3, &CPU::nop},
     {0XD4, &CPU::nop},
-    {0XD5, &CPU::nop},
+    {0XD5, &CPU::LD_16_Bit},
     {0XD6, &CPU::SUB},
     {0XD7, &CPU::nop},
     {0XD8, &CPU::nop},
@@ -914,33 +962,33 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XDD, &CPU::nop},
     {0XDE, &CPU::SBC},
     {0XDF, &CPU::nop},
-    {0XE0, &CPU::nop},
-    {0XE1, &CPU::nop},
-    {0XE2, &CPU::nop},
+    {0XE0, &CPU::LD_8_Bit},
+    {0XE1, &CPU::LD_16_Bit},
+    {0XE2, &CPU::LD_8_Bit},
     {0XE3, &CPU::nop},
     {0XE4, &CPU::nop},
-    {0XE5, &CPU::nop},
+    {0XE5, &CPU::LD_16_Bit},
     {0XE6, &CPU::AND},
     {0XE7, &CPU::nop},
     {0XE8, &CPU::nop},
     {0XE9, &CPU::nop},
-    {0XEA, &CPU::nop},
+    {0XEA, &CPU::LD_8_Bit},
     {0XEB, &CPU::nop},
     {0XEC, &CPU::nop},
     {0XED, &CPU::nop},
     {0XEE, &CPU::XOR},
     {0XEF, &CPU::nop},
-    {0XF0, &CPU::nop},
-    {0XF1, &CPU::nop},
-    {0XF2, &CPU::nop},
+    {0XF0, &CPU::LD_8_Bit},
+    {0XF1, &CPU::LD_16_Bit},
+    {0XF2, &CPU::LD_8_Bit},
     {0XF3, &CPU::nop},
     {0XF4, &CPU::nop},
-    {0XF5, &CPU::nop},
+    {0XF5, &CPU::LD_16_Bit},
     {0XF6, &CPU::OR},
     {0XF7, &CPU::nop},
-    {0XF8, &CPU::nop},
-    {0XF9, &CPU::nop},
-    {0XFA, &CPU::nop},
+    {0XF8, &CPU::LD_16_Bit},
+    {0XF9, &CPU::LD_16_Bit},
+    {0XFA, &CPU::LD_8_Bit},
     {0XFB, &CPU::nop},
     {0XFC, &CPU::nop},
     {0XFD, &CPU::nop},
