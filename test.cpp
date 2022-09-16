@@ -12,7 +12,7 @@ void Test::runTests() {
 }
 
 void Test::testLD() {
-    const int ARR_SIZE = 41;
+    const int ARR_SIZE = 66;
     const uint8_t LD_snippet[ARR_SIZE] = {
         0x3E, //  1; LD A d8
         0x01,
@@ -55,16 +55,43 @@ void Test::testLD() {
         0xFA, // 27; A,(a16)     6th compare
         0x88, //
         0xFF, //
+        0x01, // 28; LD BC, d16
+        0x22, //
+        0x11, //
+        0x31, // 29; LD SP, d16
+        0xF8, //
+        0xFF, //
+        0x08, // 30; LD (a16),SP
+        0x00, //
+        0x00, //
+        0x21, // 31; LD HL, d16
+        0x00, //
+        0x00, //
+        0x2A, // 32; LD A,(HL+)
+        0x5F, // 33; LD E, A
+        0x2A, // 34; LD A,(HL+)
+        0x57, // 35; LD D, A     7th compare
+        0x31, // 36; LD SP, d16
+        0xFF, //
+        0xBF, //
+        0xF8, // 37; LD HL,SP+r8
+        0x80, //
+        0xF8, // 38; LD HL,SP+r8
+        0x7F, //
+        0xC5, // 39 PUSH BC
+        0XD1, // 40 POP DE
     };
 
-    const int NUM_TESTS = 6;
+    const int NUM_TESTS = 8;
     testCase testCases[NUM_TESTS] = {
         {0x0100, 0x0203, 0x0405, 0x0607, 0x0000, 7},
         {0x0100, 0x0303, 0x0505, 0x0707, 0x0000, 3},
         {0x0100, 0x3E03, 0x0105, 0x0000, 0x0000, 5},
         {0x0100, 0xFF03, 0x0105, 0x0001, 0x0000, 3},
         {0xFF00, 0xFF03, 0x0105, 0x0000, 0x0000, 4},
-        {0x4200, 0xFF88, 0x0105, 0x0000, 0x0000, 5}
+        {0x4200, 0xFF88, 0x0105, 0x0000, 0x0000, 5},
+        {0xFF00, 0x1122, 0xFFF8, 0x0002, 0xFFF8, 8},
+        {0xFF20, 0x1122, 0x1122, 0xC07E, 0xBFFF, 5}
     };
 
     this->cpu = new CPU(0);

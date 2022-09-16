@@ -82,14 +82,17 @@ void CPU::LD_8_Bit(uint8_t instruction) {
 
     if (instruction > 0xC0) {
         if (r1 == 0x00) {
+            uint16_t address;
             switch (r2) {
             case 0x04:
-                this->addressBus[0xFF00 + this->addressBus[++(this->PC)]] = this->registers[A];
-                if (debug) { printf("LD (FFd8), A\n"); }
+                address = 0xFF00 + this->addressBus[++(this->PC)];
+                this->addressBus[address] = this->registers[A];
+                if (debug) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x06:
-                this->registers[A] = this->addressBus[0xFF00 + this->addressBus[++(this->PC)]];
-                if (debug) { printf("LD A, (FFd8)\n"); }
+                address = 0xFF00 + this->addressBus[++(this->PC)];
+                this->registers[A] = this->addressBus[address];
+                if (debug) { printf("LD A, (0x%04X)\n", address); }
                 break;
             default:
                 break;
@@ -101,22 +104,22 @@ void CPU::LD_8_Bit(uint8_t instruction) {
             case 0x04:
                 address = 0xFF00 + this->registers[C];
                 this->addressBus[address] = this->registers[A];
-                if (debug) { printf("LD (FF_C), A\n"); }
+                if (debug) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x05:
                 address = this->addressBus[++(this->PC)] + (this->addressBus[++(this->PC)] << 8);
                 this->addressBus[address] = this->registers[A];
-                if (debug) { printf("LD (d8d8), A\n"); }
+                if (debug) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x06:
                 address = 0xFF00 + this->registers[C];
                 this->registers[A] = this->addressBus[address];
-                if (debug) { printf("LD A, (FF_C)\n"); }
+                if (debug) { printf("LD A, (0x%04X)\n", address); }
                 break;
             case 0x07:
                 address = this->addressBus[++(this->PC)] + (this->addressBus[++(this->PC)] << 8);
                 this->registers[A] = this->addressBus[address];
-                if (debug) { printf("LD A, (d8d8)\n"); }
+                if (debug) { printf("LD A, (0x%04X)\n", address); }
                 break;
             default:
                 break;
@@ -169,87 +172,137 @@ void CPU::LD_8_Bit(uint8_t instruction) {
             }
         }
         else if (r1 == 0x06) {
+            uint8_t val = this->addressBus[++(this->PC)];
             if (r2 == 0x06) {
-                this->addressBus[this->getHL()] = this->addressBus[++(this->PC)];
-                if (debug) { printf("LD (HL), d8\n"); }
+                this->addressBus[this->getHL()] = val;
+                if (debug) { printf("LD (HL), 0x%02X\n", val); }
             }
             else {
-                this->registers[r2] = this->addressBus[++(this->PC)];
-                if (debug) { printf("LD %c, d8\n", regNames[r2]); }
+                this->registers[r2] = val;
+                if (debug) { printf("LD %c, 0x%02X\n", regNames[r2], val); }
             }
         }
     }
 }
 
 void CPU::LD_16_Bit(uint8_t instruction) {
-    uint8_t encoding = (instruction & 0b00110000) >> 4;
-    uint8_t lVal = this->addressBus[++(this->PC)];
-    uint8_t hVal = this->addressBus[++(this->PC)];
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
 
-    /*if (r1 == 0x01) {
+    if (instruction > 0xC0) {
+        if (r1 == 0x01) {
+            uint8_t lVal;
+            uint8_t hVal;
             switch (r2)
             {
             case 0x00:
-                this->AddressBus[this->registers->getBC()] = this->registers[A];
-                break;
-            case 0x01:
-                this->registers[A] = this->AddressBus[this->registers->getBC()];
+                lVal = this->addressBus[this->SP++];
+                hVal = this->addressBus[this->SP++];
+                this->setBC(hVal, lVal);
+                if (debug) { printf("POP BC\n"); }
                 break;
             case 0x02:
-                this->AddressBus[this->registers->getDE()] = this->registers[A];
-                break;
-            case 0x03:
-                this->registers[A] = this->AddressBus[this->registers->getDE()];
+                lVal = this->addressBus[this->SP++];
+                hVal = this->addressBus[this->SP++];
+                this->setDE(hVal, lVal);
+                if (debug) { printf("POP DE\n"); }
                 break;
             case 0x04:
-                this->AddressBus[hl] = this->registers[A];
-                hl += 1;
-                this->registers[H] = uint8_t(hl >> 8);
-                this->registers[L] = uint8_t(hl & 0x00FF);
-                break;
-            case 0x05:
-                this->registers[A] = this->AddressBus[hl];
-                hl += 1;
-                this->registers[H] = uint8_t(hl >> 8);
-                this->registers[L] = uint8_t(hl & 0x00FF);
+                lVal = this->addressBus[this->SP++];
+                hVal = this->addressBus[this->SP++];
+                this->setHL(hVal, lVal);
+                if (debug) { printf("POP HL\n"); }
                 break;
             case 0x06:
-                this->AddressBus[hl] = this->registers[A];
-                hl -= 1;
-                this->registers[H] = uint8_t(hl >> 8);
-                this->registers[L] = uint8_t(hl & 0x00FF);
+                lVal = this->addressBus[this->SP++];
+                hVal = this->addressBus[this->SP++];
+                this->setAF(hVal, lVal);
+                if (debug) { printf("POP AF\n"); }
                 break;
             case 0x07:
-                this->registers[A] = this->AddressBus[hl];
-                hl -= 1;
-                this->registers[H] = uint8_t(hl >> 8);
-                this->registers[L] = uint8_t(hl & 0x00FF);
+                this->SP = this->getHL();
+                if (debug) { printf("LD SP, HL\n"); }
                 break;
             default:
                 break;
             }
-        }*/
+        }
+        else {
+            int8_t val;
+            uint16_t result;
+            switch (r2)
+            {
+            case 0x00:
+                this->addressBus[--this->SP] = this->registers[B];
+                this->addressBus[--this->SP] = this->registers[C];
+                if (debug) { printf("PUSH BC\n"); }
+                break;
+            case 0x02:
+                this->addressBus[--this->SP] = this->registers[D];
+                this->addressBus[--this->SP] = this->registers[E];
+                if (debug) { printf("PUSH DE\n"); }
+                break;
+            case 0x04:
+                this->addressBus[--this->SP] = this->registers[H];
+                this->addressBus[--this->SP] = this->registers[L];
+                if (debug) { printf("PUSH HL\n"); }
+                break;
+            case 0x06:
+                this->addressBus[--this->SP] = this->registers[A];
+                this->addressBus[--this->SP] = this->registers[F];
+                if (debug) { printf("PUSH AF\n"); }
+                break;
+            case 0x07:
+                val = this->addressBus[++(this->PC)];
+                result = this->SP + val;
+                this->setHL(result);
 
-    switch (encoding)
-    {
-    case 0x00:
-        if (debug) { printf("LD 16bit to BC\n"); }
-        this->setBC(hVal, lVal);
-        break;
-    case 0x01:
-        if (debug) { printf("LD 16bit to DE\n"); }
-        this->setDE(hVal, lVal);
-        break;
-    case 0x02:
-        if (debug) { printf("LD 16bit to HL\n"); }
-        this->setHL(hVal, lVal);
-        break;
-    case 0x03:
-        if (debug) { printf("LD 16bit to SP\n"); }
-        this->SP = (hVal << 8) + lVal;
-        break;
-    default:
-        break;
+                // Calculate if Carry flag needs to be set
+                (val > 0 && result < this->SP) ? this->setC(true) : this->setC(false);
+                // Calculate if Half-Carry flag needs to be set
+                (val > 0 && (result & 0x0FFF) < (this->SP & 0xFFF)) ? this->setH(true) : this->setH(false);
+                // Set N and Z flags to 0
+                this->setN(false);
+                this->setZ(false);
+
+                if (debug) { printf("LD SP, HL\n"); }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    else {
+        uint8_t lVal = this->addressBus[++(this->PC)];
+        uint8_t hVal = this->addressBus[++(this->PC)];
+        uint16_t addr;
+        switch (r2)
+        {
+        case 0x00:
+            this->setBC(hVal, lVal);
+            if (debug) { printf("LD BC, 0x%02X%02X\n", hVal, lVal); }
+            break;
+        case 0x01:
+            addr = (hVal << 8) + lVal;
+            this->addressBus[addr] = this->getSP() & 0x00FF;
+            this->addressBus[addr + 1] = (this->getSP() & 0xFF00) >> 8;
+            if (debug) { printf("LD (0x%04X), SP\n", addr); }
+            break;
+        case 0x02:
+            this->setDE(hVal, lVal);
+            if (debug) { printf("LD DE, 0x%02X%02X\n", hVal, lVal); }
+            break;
+        case 0x04:
+            this->setHL(hVal, lVal);
+            if (debug) { printf("LD HL, 0x%02X%02X\n", hVal, lVal); }
+            break;
+        case 0x06:
+            this->SP = (hVal << 8) + lVal;
+            if (debug) { printf("LD SP, 0x%02X%02X\n", hVal, lVal); }
+            break;
+        default:
+            break;
+        }
     }
 }
 
