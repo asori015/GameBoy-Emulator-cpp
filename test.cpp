@@ -6,9 +6,7 @@ Test::Test() {
 
 void Test::runTests() {
     this->testLD();
-    //this->testADD();
-    //this->cpu->loadBIOS(this->testRoutine, 1, 0);
-    //;
+    this->testADD();
 }
 
 void Test::testLD() {
@@ -113,21 +111,71 @@ void Test::testLD() {
 }
 
 void Test::testADD() {
-    const int ARR_SIZE = 5;
+    const int ARR_SIZE = 35;
     const uint8_t ADD_snippet[ARR_SIZE] = {
-        0x3E, // LD A d8
-        0x3A,
-        0x06, // LD B d8
-        0xC6,
-        0x80  // ADD A B
+        0x3E, //  1; LD A, d8
+        0x3A, //
+        0x06, //  2; LD B, d8
+        0xC6, //
+        0x80, //  3; ADD A, B;    1st compare
+        0xAF, //  4; XOR A,       clearing flags
+        0x3E, //  5; LD A, d8
+        0x3C, //
+        0xC6, //  6; ADD A, d8;   2nd compare
+        0xFF, //
+        0xAF, //  7; XOR A;       clearing flags
+        0x36, //  8; LD (HL), d8
+        0x12, //
+        0x3E, //  9; LD A, d8
+        0x3C, //
+        0x86, // 10; ADD A, (HL); 3rd compare
+        0x31, // 11; LD SP, d16
+        0xF8, //
+        0xFF, //
+        0x3E, // 12; LD A, d8
+        0xF0, // 
+        0xC6, // 13; ADD A, d8;
+        0xF1, //
+        0xF5, // 14; PUSH AF
+        0xF5, // 15; PUSH AF
+        0x06, // 16; LD B, d8
+        0x0F, //
+        0x88, // 17; ADC A, B;    4th compare
+        0xF1, // 18; POP AF
+        0xCE, // 19; ADC A, d8    5th compare
+        0x3B,
+        0xF1, // 18; POP AF
+        0x36, // 20; LD (HL), d8
+        0x1E, //
+        0x8E, // 21; ADC A, (HL)  6th compare
+    };
+
+    const int NUM_TESTS = 6;
+    testCase testCases[NUM_TESTS] = {
+        {0x00B0, 0xC600, 0x0000, 0x0000, 0x0000, 3},
+        {0x3B30, 0xC600, 0x0000, 0x0000, 0x0000, 3},
+        {0x4E00, 0xC600, 0x0000, 0x0000, 0x0000, 4},
+        {0xF120, 0x0F00, 0x0000, 0x0000, 0xFFF4, 7},
+        {0x1D10, 0x0F00, 0x0000, 0x0000, 0xFFF6, 2},
+        {0x00B0, 0x0F00, 0x0000, 0x0000, 0xFFF8, 3},
     };
 
     this->cpu = new CPU(0);
     cpu->loadBIOS(ADD_snippet, ARR_SIZE, 0);
-    for (int i = 0; i < ARR_SIZE; i++) {
-        cpu->step();
+
+    for (int i = 0; i < NUM_TESTS; i++) {
+        for (int j = 0; j < testCases[i].instuctionCount; j++) {
+            cpu->step();
+        }
+        if (!this->compare(testCases[i].AF, testCases[i].BC, testCases[i].DE, testCases[i].HL, testCases[i].SP)) {
+            std::cout << "LD Test Failed" << std::endl;
+            return;
+        }
     }
-    //cpu->printRegs();
+
+    std::cout << "LD Test Passed!" << std::endl;
+
+    delete cpu;
 }
 
 bool Test::compare(uint16_t AF, uint16_t BC, uint16_t DE, uint16_t HL, uint16_t SP) {

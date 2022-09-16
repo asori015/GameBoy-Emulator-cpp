@@ -355,8 +355,6 @@ void CPU::ADD(uint8_t instruction) {
 }
 
 void CPU::ADC(uint8_t instruction) {
-    std::cout << "ADC A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     uint8_t rVal = this->registers[A];
     uint8_t nVal;
@@ -364,14 +362,17 @@ void CPU::ADC(uint8_t instruction) {
     // Get the value being used for the calculation with Register A
     if (encoding == 0x03) {
         nVal = this->addressBus[++(this->PC)];
+        if (debug) { printf("ADC A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             nVal = this->addressBus[this->getHL()];
+            if (debug) { printf("ADC A, (HL)\n"); }
         }
         else {
             nVal = this->registers[r];
+            if (debug) { printf("ADC A, %c\n", this->regNames[r]); }
         }
     }
 
