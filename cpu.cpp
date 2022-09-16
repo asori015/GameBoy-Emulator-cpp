@@ -322,8 +322,6 @@ void CPU::JP(uint8_t instruction) {
 }
 
 void CPU::ADD(uint8_t instruction) {
-    std::cout << "ADD A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     uint8_t rVal = this->registers[A];
     uint8_t nVal;
@@ -331,14 +329,17 @@ void CPU::ADD(uint8_t instruction) {
     // Get the value being used for the calculation with Register A
     if (encoding == 0x03) {
         nVal = this->addressBus[++(this->PC)];
+        if (debug) { printf("ADD A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             nVal = this->addressBus[this->getHL()];
+            if (debug) { printf("ADD A, (HL)\n"); }
         }
         else {
             nVal = this->registers[r];
+            if (debug) { printf("ADD A, %c\n", this->regNames[r]); }
         }
     }
 
@@ -389,8 +390,6 @@ void CPU::ADC(uint8_t instruction) {
 }
 
 void CPU::SUB(uint8_t instruction) {
-    std::cout << "SUB A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     uint8_t rVal = this->registers[A];
     uint8_t nVal;
@@ -398,14 +397,17 @@ void CPU::SUB(uint8_t instruction) {
     // Get the value being used for the calculation with Register A
     if (encoding == 0x03) {
         nVal = this->addressBus[++(this->PC)];
+        if (debug) { printf("SUB A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             nVal = this->addressBus[this->getHL()];
+            if (debug) { printf("SUB A, (HL)\n"); }
         }
         else {
             nVal = this->registers[r];
+            if (debug) { printf("SUB A, %c\n", this->regNames[r]); }
         }
     }
 
@@ -422,8 +424,6 @@ void CPU::SUB(uint8_t instruction) {
 }
 
 void CPU::SBC(uint8_t instruction) {
-    std::cout << "SBC A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     uint8_t rVal = this->registers[A];
     uint8_t nVal;
@@ -431,23 +431,26 @@ void CPU::SBC(uint8_t instruction) {
     // Get the value being used for the calculation with Register A
     if (encoding == 0x03) {
         nVal = this->addressBus[++(this->PC)];
+        if (debug) { printf("SBC A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             nVal = this->addressBus[this->getHL()];
+            if (debug) { printf("SBC A, (HL)\n"); }
         }
         else {
             nVal = this->registers[r];
+            if (debug) { printf("SBC A, %c\n", this->regNames[r]); }
         }
     }
 
-
-    // This math is not working, needs a rewrite
-    // nVal += this->getC()
-
     // Calculate if Half-Carry flag needs to be set
-    ((nVal & 0x0F) + this->getC() > (rVal & 0x0F)) ? this->setH(true) : this->setH(false);
+    ((rVal & 0x0F) < (nVal & 0x0F) + this->getC()) ? this->setH(true) : this->setH(false);
+    // I don't understand, below line *should* be the right way to calc h-bit, but programming manual
+    // and java translate source says otherwise without much explanation
+    // uint16_t operand = nVal + this->getC();
+    // ((operand <= 0xFF) && ((operand & 0x000F) > (rVal & 0x0F))) ? this->setH(true) : this->setH(false);
     // Perform subtraction to A register
     this->registers[A] -= nVal + this->getC();
     // Calculate if Full-Carry flag needs to be set
@@ -661,7 +664,7 @@ void CPU::SET(uint8_t instruction) {
 }
 
 void CPU::printRegs() {
-    printf("REGS: \nA: %X F: %X\nB: %X C: %X\nD: %X E: %X\nH: %X L: %X\nPC: %X\nSP: %X\n\n", 
+    printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nPC: 0x%04X\nSP: 0x%04X\n\n", 
         this->registers[A], this->registers[F], this->registers[B], this->registers[C],
         this->registers[D], this->registers[E], this->registers[H], this->registers[L],
         this->PC, this->SP);

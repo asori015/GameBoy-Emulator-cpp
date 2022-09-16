@@ -15,7 +15,7 @@ private:
     };
 
     void testLD();
-    void testADD();
+    void testArithmetic();
     bool compare(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
     CPU* cpu;
     //const uint8_t testRoutine[3] = { 0x11, 0x22, 0x33 };

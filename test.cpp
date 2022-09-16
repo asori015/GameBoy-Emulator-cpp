@@ -6,7 +6,7 @@ Test::Test() {
 
 void Test::runTests() {
     this->testLD();
-    this->testADD();
+    this->testArithmetic();
 }
 
 void Test::testLD() {
@@ -110,20 +110,20 @@ void Test::testLD() {
     delete cpu;
 }
 
-void Test::testADD() {
-    const int ARR_SIZE = 35;
+void Test::testArithmetic() {
+    const int ARR_SIZE = 66;
     const uint8_t ADD_snippet[ARR_SIZE] = {
         0x3E, //  1; LD A, d8
         0x3A, //
         0x06, //  2; LD B, d8
         0xC6, //
         0x80, //  3; ADD A, B;    1st compare
-        0xAF, //  4; XOR A,       clearing flags
+        0xAF, //  4; XOR A, A;    clearing flags
         0x3E, //  5; LD A, d8
         0x3C, //
         0xC6, //  6; ADD A, d8;   2nd compare
         0xFF, //
-        0xAF, //  7; XOR A;       clearing flags
+        0xAF, //  7; XOR A, A;    clearing flags
         0x36, //  8; LD (HL), d8
         0x12, //
         0x3E, //  9; LD A, d8
@@ -148,9 +148,40 @@ void Test::testADD() {
         0x36, // 20; LD (HL), d8
         0x1E, //
         0x8E, // 21; ADC A, (HL)  6th compare
+        0x3E, // 22; LD A, d8
+        0x3E, // 
+        0xB7, // 23; OR A, A;     clearing flags
+        0xF5, // 24; PUSH AF
+        0xF5, // 25; PUSH AF
+        0x06, // 26; LD B, d8
+        0x3E, //
+        0x90, // 27; SUB A, B     7th compare
+        0xF1, // 28; POP AF
+        0xD6, // 29; SUB A, d8    8th compare
+        0x0F,
+        0xF1, // 30; POP AF
+        0x36, // 31; LD (HL), d8
+        0x40, //
+        0x96, // 32; SUB A, (HL)  9th compare
+        0x3E, // 33; LD A, d8
+        0xF0, // 
+        0xC6, // 34; ADD A, d8;
+        0x4B, //
+        0xF5, // 35; PUSH AF
+        0xF5, // 36; PUSH AF
+        0x06, // 37; LD B, d8
+        0x2A, //
+        0x98, // 38; SBC A, B;    10th compare
+        0xF1, // 28; POP AF
+        0xDE, // 29; SBC A, d8    11th compare
+        0xFF,
+        0xF1, // 30; POP AF
+        0x36, // 31; LD (HL), d8
+        0x4F, //
+        0x9E, // 32; SBC A, (HL)  12th compare
     };
 
-    const int NUM_TESTS = 6;
+    const int NUM_TESTS = 12;
     testCase testCases[NUM_TESTS] = {
         {0x00B0, 0xC600, 0x0000, 0x0000, 0x0000, 3},
         {0x3B30, 0xC600, 0x0000, 0x0000, 0x0000, 3},
@@ -158,6 +189,12 @@ void Test::testADD() {
         {0xF120, 0x0F00, 0x0000, 0x0000, 0xFFF4, 7},
         {0x1D10, 0x0F00, 0x0000, 0x0000, 0xFFF6, 2},
         {0x00B0, 0x0F00, 0x0000, 0x0000, 0xFFF8, 3},
+        {0x00C0, 0x3E00, 0x0000, 0x0000, 0xFFF4, 6},
+        {0x2F60, 0x3E00, 0x0000, 0x0000, 0xFFF6, 2},
+        {0xFE50, 0x3E00, 0x0000, 0x0000, 0xFFF8, 3},
+        {0x1040, 0x2A00, 0x0000, 0x0000, 0xFFF4, 6},
+        {0x3B70, 0x2A00, 0x0000, 0x0000, 0xFFF6, 2},
+        {0xEB70, 0x2A00, 0x0000, 0x0000, 0xFFF8, 3},
     };
 
     this->cpu = new CPU(0);
