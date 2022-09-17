@@ -9,19 +9,8 @@ CPU::CPU(Machine* machine) {
     this->PC = 0;
     this->SP = 0;
     this->debug = true;
-    //this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
-
-    //this->addressBus[0] = 0x93;
-    //this->addressBus[1] = 0x8B;
-    //this->registers[A] = 0x3e;
-    //this->registers[F] = 0x00;
-    //this->registers[B] = 0x01;
-    //this->registers[C] = 0x01;
-    //this->registers[D] = 0x01;
-    //this->registers[E] = 0x40;
-    //this->registers[H] = 0x01;
-    //this->registers[L] = 0x01;
-    //this->run();
+    this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
+    this->run();
 
     //this->step();
 }
@@ -34,6 +23,12 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 
 // This function is temporary, step function should be called by the Machine class
 void CPU::run() {
+    debug = false;
+    while (this->PC != 0x001D) {
+        step();
+    }
+
+    debug = true;
     int x = 0; // Temporary set up, this loop should be infinite
     while (x < 10) {
         step();
@@ -312,13 +307,83 @@ void CPU::JP(uint8_t instruction) {
 
 
     if (r1 == 0x01) {
-        ;
+        this->PC = this->getHL() - 1;
+        if (debug) { printf("JP HL\n"); }
     }
     else if (r1 == 0x02) {
-        ;
+        uint8_t lVal = this->addressBus[++(this->PC)];
+        uint8_t hVal = this->addressBus[++(this->PC)];
+        uint16_t addr = (hVal << 8) + lVal;
+
+        switch (r2)
+        {
+        case 0x00:
+            if (debug) { printf("JP NZ 0x%04X\n", addr); }
+            if (this->getZ()) { return; }
+            break;
+        case 0x01:
+            if (debug) { printf("JP Z 0x%04X\n", addr); }
+            if (!this->getZ()) { return; }
+            break;
+        case 0x02:
+            if (debug) { printf("JP NC 0x%04X\n", addr); }
+            if (this->getC()) { return; }
+            break;
+        case 0x03:
+            if (debug) { printf("JP C 0x%04X\n", addr); }
+            if (!this->getC()) { return; }
+            break;
+        default:
+            break;
+        }
+        
+        this->PC = addr - 1;
     }
+    else if (r1 == 0x03) {
+        uint8_t lVal = this->addressBus[++(this->PC)];
+        uint8_t hVal = this->addressBus[++(this->PC)];
+        uint16_t addr = (hVal << 8) + lVal;
+        this->PC = addr - 1;
+        if (debug) { printf("JP 0x%04X\n", addr); }
+    }
+}
 
+void CPU::JR(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
 
+    if (r2 == 0x03) {
+        int8_t nVal = this->addressBus[++(this->PC)];
+        this->PC += nVal;
+        if (debug) { printf("JR \n"); }
+    }
+    else {
+        int8_t nVal = this->addressBus[++(this->PC)];
+
+        switch (r2)
+        {
+        case 0x04:
+            if (debug) { printf("JR NZ 0x%02X\n", nVal); }
+            if (this->getZ()) { return; }
+            break;
+        case 0x05:
+            if (debug) { printf("JR Z 0x%02X\n", nVal); }
+            if (!this->getZ()) { return; }
+            break;
+        case 0x06:
+            if (debug) { printf("JR NC 0x%02X\n", nVal); }
+            if (this->getC()) { return; }
+            break;
+        case 0x07:
+            if (debug) { printf("JR C 0x%02X\n", nVal); }
+            if (!this->getC()) { return; }
+            break;
+        default:
+            break;
+        }
+
+        this->PC += nVal;
+    }
 }
 
 void CPU::ADD(uint8_t instruction) {
@@ -462,20 +527,22 @@ void CPU::SBC(uint8_t instruction) {
 }
 
 void CPU::AND(uint8_t instruction) {
-    std::cout << "AND A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
+
     if (encoding == 0x03) {
         uint8_t nVal = this->addressBus[++(this->PC)];
         this->registers[A] &= nVal;
+        if (debug) { printf("AND A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             this->registers[A] &= this->addressBus[this->getHL()];
+            if (debug) { printf("AND A, (HL)\n"); }
         }
         else {
             this->registers[A] &= this->registers[r];
+            if (debug) { printf("AND A, %c\n", this->regNames[r]); }
         }
     }
 
@@ -488,20 +555,22 @@ void CPU::AND(uint8_t instruction) {
 }
 
 void CPU::XOR(uint8_t instruction) {
-    std::cout << "XOR A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
+
     if (encoding == 0x03) {
         uint8_t nVal = this->addressBus[++(this->PC)];
         this->registers[A] ^= nVal;
+        if (debug) { printf("XOR A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             this->registers[A] ^= this->addressBus[this->getHL()];
+            if (debug) { printf("XOR A, (HL)\n"); }
         }
         else {
             this->registers[A] ^= this->registers[r];
+            if (debug) { printf("XOR A, %c\n", this->regNames[r]); }
         }
     }
 
@@ -514,20 +583,22 @@ void CPU::XOR(uint8_t instruction) {
 }
 
 void CPU::OR(uint8_t instruction) {
-    std::cout << "OR A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
+
     if (encoding == 0x03) {
         uint8_t nVal = this->addressBus[++(this->PC)];
         this->registers[A] |= nVal;
+        if (debug) { printf("OR A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             this->registers[A] |= this->addressBus[this->getHL()];
+            if (debug) { printf("OR A, (HL)\n"); }
         }
         else {
             this->registers[A] |= this->registers[r];
+            if (debug) { printf("OR A, %c\n", this->regNames[r]); }
         }
     }
 
@@ -540,8 +611,6 @@ void CPU::OR(uint8_t instruction) {
 }
 
 void CPU::CP(uint8_t instruction) {
-    std::cout << "CP A " << std::endl;
-
     uint8_t encoding = (instruction & 0b11000000) >> 6;
     uint8_t rVal = this->registers[A];
     uint8_t nVal;
@@ -549,14 +618,17 @@ void CPU::CP(uint8_t instruction) {
     // Get the value being used for the calculation with Register A
     if (encoding == 0x03) {
         nVal = this->addressBus[++(this->PC)];
+        if (debug) { printf("CP A, 0x%02X\n", nVal); }
     }
     else {
         uint8_t r = instruction & 0b00000111;
         if (r == 0x06) {
             nVal = this->addressBus[this->getHL()];
+            if (debug) { printf("CP A, (HL)\n"); }
         }
         else {
             nVal = this->registers[r];
+            if (debug) { printf("CP A, %c\n", this->regNames[r]); }
         }
     }
 
@@ -570,11 +642,127 @@ void CPU::CP(uint8_t instruction) {
     this->setN(true);
 }
 
+void CPU::INC(uint8_t instruction) {
+    uint8_t rVal = (instruction & 0x38) >> 3;
+    uint8_t result;
+
+    if (rVal == 0x06) {
+        this->addressBus[this->getHL()] += 1;
+        result = this->addressBus[this->getHL()];
+        if (debug) { printf("INC (HL)\n"); }
+    }
+    else {
+        this->registers[rVal] += 1;
+        result = this->registers[rVal];
+        if (debug) { printf("INC %c\n", this->regNames[rVal]); }
+    }
+
+    // Calculate if Zero flag needs to be set
+    (result == 0x00) ? this->setZ(true) : this->setZ(false);
+    // Calculate if Half-Carry flag needs to be set
+    ((result & 0x0F) == 0x00) ? this->setH(true) : this->setH(false);
+
+    // Set N flag to 0
+    this->setN(false);
+}
+
+void CPU::DEC(uint8_t instruction) {
+    uint8_t rVal = (instruction & 0x38) >> 3;
+    uint8_t result;
+
+    if (rVal == 0x06) {
+        this->addressBus[this->getHL()] -= 1;
+        result = this->addressBus[this->getHL()];
+        if (debug) { printf("DEC (HL)\n"); }
+    }
+    else {
+        this->registers[rVal] -= 1;
+        result = this->registers[rVal];
+        if (debug) { printf("DEC %c\n", this->regNames[rVal]); }
+    }
+
+    // Calculate if Zero flag needs to be set
+    (result == 0x00) ? this->setZ(true) : this->setZ(false);
+    // Calculate if Half-Carry flag needs to be set
+    ((result & 0x0F) == 0x0F) ? this->setH(true) : this->setH(false);
+
+    // Set N flag to 1
+    this->setN(true);
+}
+
+void CPU::ADD_16_BIT(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+
+    if (r1 == 0x00) {
+        int8_t nVal = this->addressBus[++(this->PC)];
+        uint16_t rVal = this->SP;
+        this->SP += nVal;
+        
+        // Calculate if Carry flag needs to be set
+        (nVal > 0x00 && this->SP < rVal) ? this->setC(true) : this->setC(false);
+        // Calculate if Half-Carry flag needs to be set
+        (nVal > 0x00 && (this->SP & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+        this->setZ(false);
+        if (debug) { printf("ADD SP, 0x%02X\n", nVal); }
+    }
+    else {
+        uint16_t rVal = this->getHL();
+        switch (r2)
+        {
+        case 0x01:
+            this->setHL(this->getHL() + this->getBC());
+            // Calculate if Carry flag needs to be set
+            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Half-Carry flag needs to be set
+            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            if (debug) { printf("ADD HL, BC\n"); }
+            break;
+        case 0x03:
+            this->setHL(this->getHL() + this->getDE());
+            // Calculate if Carry flag needs to be set
+            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Half-Carry flag needs to be set
+            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            if (debug) { printf("ADD HL, DE\n"); }
+            break;
+        case 0x05:
+            this->setHL(this->getHL() + this->getHL());
+            // Calculate if Carry flag needs to be set
+            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Half-Carry flag needs to be set
+            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            if (debug) { printf("ADD HL, HL\n"); }
+            break;
+        case 0x07:
+            this->setHL(this->getHL() + this->getSP());
+            // Calculate if Carry flag needs to be set
+            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
+            // Calculate if Half-Carry flag needs to be set
+            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            if (debug) { printf("ADD HL, SP\n"); }
+            break;
+        default:
+            break;
+        }
+
+        // Set N flag to 0
+        this->setN(false);
+    }
+}
+
+void CPU::INC_16_BIT(uint8_t instruction) {
+
+}
+
+void CPU::DEC_16_BIT(uint8_t instruction) {
+
+}
+
 void CPU::CBPrefix(uint8_t instruction) {
     if (debug) { printf("CB Prefix\n"); }
     instruction = this->addressBus[++(this->PC)];
     (this->*InstructionMethods2[instruction])(instruction);
-    this->PC += 1;
 }
 
 void CPU::RLC(uint8_t instruction) {
@@ -661,6 +849,20 @@ void CPU::SET(uint8_t instruction) {
         if (debug) { printf("SET bit %d in %c\n", n, regNames[r]); }
         this->registers[r] |= mask;
     }
+}
+
+void CPU::CALL(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+
+    if (r1 == 0x05) {
+        int8_t lAddr = this->addressBus[++(this->PC)];
+        int8_t hAddr = this->addressBus[++(this->PC)];
+    }
+}
+
+void CPU::RET(uint8_t instruction) {
+    ;
 }
 
 void CPU::printRegs() {
@@ -799,64 +1001,64 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0X01, &CPU::LD_16_Bit},
     {0X02, &CPU::LD_8_Bit},
     {0X03, &CPU::nop},
-    {0X04, &CPU::nop},
-    {0X05, &CPU::nop},
+    {0X04, &CPU::INC},
+    {0X05, &CPU::DEC},
     {0X06, &CPU::LD_8_Bit},
     {0X07, &CPU::nop},
     {0X08, &CPU::LD_16_Bit},
-    {0X09, &CPU::nop},
+    {0X09, &CPU::ADD_16_BIT},
     {0X0A, &CPU::LD_8_Bit},
     {0X0B, &CPU::nop},
-    {0X0C, &CPU::nop},
-    {0X0D, &CPU::nop},
+    {0X0C, &CPU::INC},
+    {0X0D, &CPU::DEC},
     {0X0E, &CPU::LD_8_Bit},
     {0X0F, &CPU::nop},
     {0X10, &CPU::nop},
     {0X11, &CPU::LD_16_Bit},
     {0X12, &CPU::LD_8_Bit},
     {0X13, &CPU::nop},
-    {0X14, &CPU::nop},
-    {0X15, &CPU::nop},
+    {0X14, &CPU::INC},
+    {0X15, &CPU::DEC},
     {0X16, &CPU::LD_8_Bit},
     {0X17, &CPU::nop},
-    {0X18, &CPU::nop},
-    {0X19, &CPU::nop},
+    {0X18, &CPU::JR},
+    {0X19, &CPU::ADD_16_BIT},
     {0X1A, &CPU::LD_8_Bit},
     {0X1B, &CPU::nop},
-    {0X1C, &CPU::nop},
-    {0X1D, &CPU::nop},
+    {0X1C, &CPU::INC},
+    {0X1D, &CPU::DEC},
     {0X1E, &CPU::LD_8_Bit},
     {0X1F, &CPU::nop},
-    {0X20, &CPU::nop},
+    {0X20, &CPU::JR},
     {0X21, &CPU::LD_16_Bit},
     {0X22, &CPU::LD_8_Bit},
     {0X23, &CPU::nop},
-    {0X24, &CPU::nop},
-    {0X25, &CPU::nop},
+    {0X24, &CPU::INC},
+    {0X25, &CPU::DEC},
     {0X26, &CPU::LD_8_Bit},
     {0X27, &CPU::nop},
-    {0X28, &CPU::nop},
-    {0X29, &CPU::nop},
+    {0X28, &CPU::JR},
+    {0X29, &CPU::ADD_16_BIT},
     {0X2A, &CPU::LD_8_Bit},
     {0X2B, &CPU::nop},
-    {0X2C, &CPU::nop},
-    {0X2D, &CPU::nop},
+    {0X2C, &CPU::INC},
+    {0X2D, &CPU::DEC},
     {0X2E, &CPU::LD_8_Bit},
     {0X2F, &CPU::nop},
-    {0X30, &CPU::nop},
+    {0X30, &CPU::JR},
     {0X31, &CPU::LD_16_Bit},
     {0X32, &CPU::LD_8_Bit},
     {0X33, &CPU::nop},
-    {0X34, &CPU::nop},
-    {0X35, &CPU::nop},
+    {0X34, &CPU::INC},
+    {0X35, &CPU::DEC},
     {0X36, &CPU::LD_8_Bit},
     {0X37, &CPU::nop},
-    {0X38, &CPU::nop},
-    {0X39, &CPU::nop},
+    {0X38, &CPU::JR},
+    {0X39, &CPU::ADD_16_BIT},
     {0X3A, &CPU::LD_8_Bit},
     {0X3B, &CPU::nop},
-    {0X3C, &CPU::nop},
-    {0X3D, &CPU::nop},
+    {0X3C, &CPU::INC},
+    {0X3D, &CPU::DEC},
     {0X3E, &CPU::LD_8_Bit},
     {0X3F, &CPU::nop},
     {0X40, &CPU::LD_R_to_R},
@@ -989,15 +1191,15 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XBF, &CPU::CP},
     {0XC0, &CPU::nop},
     {0XC1, &CPU::LD_16_Bit},
-    {0XC2, &CPU::nop},
-    {0XC3, &CPU::nop},
+    {0XC2, &CPU::JP},
+    {0XC3, &CPU::JP},
     {0XC4, &CPU::nop},
     {0XC5, &CPU::LD_16_Bit},
     {0XC6, &CPU::ADD},
     {0XC7, &CPU::nop},
     {0XC8, &CPU::nop},
     {0XC9, &CPU::nop},
-    {0XCA, &CPU::nop},
+    {0XCA, &CPU::JP},
     {0XCB, &CPU::CBPrefix},
     {0XCC, &CPU::nop},
     {0XCD, &CPU::nop},
@@ -1005,7 +1207,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XCF, &CPU::nop},
     {0XD0, &CPU::nop},
     {0XD1, &CPU::LD_16_Bit},
-    {0XD2, &CPU::nop},
+    {0XD2, &CPU::JP},
     {0XD3, &CPU::nop},
     {0XD4, &CPU::nop},
     {0XD5, &CPU::LD_16_Bit},
@@ -1013,7 +1215,7 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XD7, &CPU::nop},
     {0XD8, &CPU::nop},
     {0XD9, &CPU::nop},
-    {0XDA, &CPU::nop},
+    {0XDA, &CPU::JP},
     {0XDB, &CPU::nop},
     {0XDC, &CPU::nop},
     {0XDD, &CPU::nop},
@@ -1027,8 +1229,8 @@ std::map<uint8_t, CPU::functionPointer> CPU::InstructionMethods1 = {
     {0XE5, &CPU::LD_16_Bit},
     {0XE6, &CPU::AND},
     {0XE7, &CPU::nop},
-    {0XE8, &CPU::nop},
-    {0XE9, &CPU::nop},
+    {0XE8, &CPU::ADD_16_BIT},
+    {0XE9, &CPU::JP},
     {0XEA, &CPU::LD_8_Bit},
     {0XEB, &CPU::nop},
     {0XEC, &CPU::nop},

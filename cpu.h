@@ -49,6 +49,7 @@ private:
     void LD_8_Bit(uint8_t);
     void LD_16_Bit(uint8_t);
     void JP(uint8_t);
+    void JR(uint8_t);
     void ADD(uint8_t);
     void ADC(uint8_t);
     void SUB(uint8_t);
@@ -57,6 +58,11 @@ private:
     void XOR(uint8_t);
     void OR(uint8_t);
     void CP(uint8_t);
+    void INC(uint8_t);
+    void DEC(uint8_t);
+    void ADD_16_BIT(uint8_t);
+    void INC_16_BIT(uint8_t);
+    void DEC_16_BIT(uint8_t);
     void CBPrefix(uint8_t);
     void RLC(uint8_t);
     void RRC(uint8_t);
@@ -69,6 +75,8 @@ private:
     void BIT(uint8_t);
     void RES(uint8_t);
     void SET(uint8_t);
+    void CALL(uint8_t);
+    void RET(uint8_t);
 
     // Register helper functions
     void setAF(uint8_t, uint8_t);
