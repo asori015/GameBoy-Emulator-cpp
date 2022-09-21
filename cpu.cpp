@@ -752,11 +752,49 @@ void CPU::ADD_16_BIT(uint8_t instruction) {
 }
 
 void CPU::INC_16_BIT(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
 
+    switch (r2)
+    {
+    case 0x00:
+        this->setBC(this->getBC() + 1);
+        break;
+    case 0x02:
+        this->setDE(this->getDE() + 1);
+        break;
+    case 0x04:
+        this->setHL(this->getHL() + 1);
+        break;
+    case 0x06:
+        this->SP += 1;
+        break;
+    default:
+        break;
+    }
 }
 
 void CPU::DEC_16_BIT(uint8_t instruction) {
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
 
+    switch (r2)
+    {
+    case 0x00:
+        this->setBC(this->getBC() - 1);
+        break;
+    case 0x02:
+        this->setDE(this->getDE() - 1);
+        break;
+    case 0x04:
+        this->setHL(this->getHL() - 1);
+        break;
+    case 0x06:
+        this->SP -= 1;
+        break;
+    default:
+        break;
+    }
 }
 
 void CPU::CBPrefix(uint8_t instruction) {
@@ -766,7 +804,33 @@ void CPU::CBPrefix(uint8_t instruction) {
 }
 
 void CPU::RLC(uint8_t instruction) {
-    ;
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+
+    if (r1 == 0x06) {
+        uint8_t rVal = this->addressBus[this->getHL()];
+
+        // Calculate if Carry flag needs to be set
+        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
+        this->addressBus[this->getHL()] = (rVal << 8) + this->getC();
+
+        // Calculate if Zero flag needs to be set
+        (this->addressBus[this->getHL()] == 0x00) ? this->setZ(true) : this->setZ(false);
+    }
+    else {
+        uint8_t rVal = this->registers[r1];
+
+        // Calculate if Carry flag needs to be set
+        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
+        this->registers[r1] = (rVal << 8) + this->getC();
+
+        // Calculate if Zero flag needs to be set
+        (this->registers[r1] == 0x00) ? this->setZ(true) : this->setZ(false);
+    }
+
+    // Set H and N flags to 0
+    this->setH(false);
+    this->setN(false);
 }
 
 void CPU::RRC(uint8_t instruction) {
@@ -774,7 +838,31 @@ void CPU::RRC(uint8_t instruction) {
 }
 
 void CPU::RL(uint8_t instruction) {
-    ;
+    uint8_t r1 = instruction & 0x07;
+    uint8_t r2 = (instruction & 0x38) >> 3;
+
+    if (r1 == 0x06) {
+        uint8_t rVal = this->addressBus[this->getHL()];
+
+        this->addressBus[this->getHL()] = (rVal << 8) + this->getC();
+        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
+
+        // Calculate if Zero flag needs to be set
+        (this->addressBus[this->getHL()] == 0x00) ? this->setZ(true) : this->setZ(false);
+    }
+    else {
+        uint8_t rVal = this->registers[r1];
+
+        this->registers[r1] = (rVal << 8) + this->getC();
+        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
+
+        // Calculate if Zero flag needs to be set
+        (this->registers[r1] == 0x00) ? this->setZ(true) : this->setZ(false);
+    }
+
+    // Set H and N flags to 0
+    this->setH(false);
+    this->setN(false);
 }
 
 void CPU::RR(uint8_t instruction) {
