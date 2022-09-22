@@ -10,7 +10,7 @@ CPU::CPU(Machine* machine) {
     this->SP_ = 0;
     this->debug_ = true;
     this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
-    this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
+    //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
     this->run();
 
     //this->step();
@@ -862,7 +862,7 @@ void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
     setN(false);
 }
 
-void CPU::SLA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+void CPU::SLA(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
         uint8_t rVal = addressBus_[getHL()];
 
@@ -891,7 +891,7 @@ void CPU::SLA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setN(false);
 }
 
-void CPU::SRA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+void CPU::SRA(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
         uint8_t rVal = addressBus_[getHL()];
 
@@ -922,7 +922,7 @@ void CPU::SRA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setN(false);
 }
 
-void CPU::SWAP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+void CPU::SWAP(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
         uint8_t rVal = addressBus_[getHL()];
         addressBus_[getHL()] = (rVal << 4) + (rVal >> 4);
@@ -946,7 +946,7 @@ void CPU::SWAP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setN(false);
 }
 
-void CPU::SRL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+void CPU::SRL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
         uint8_t rVal = addressBus_[getHL()];
 
@@ -975,21 +975,18 @@ void CPU::SRL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setN(false);
 }
 
-void CPU::BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r = instruction & 0x07;
-    uint8_t n = (instruction & 0x38) >> 3;
+void CPU::BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    uint8_t mask = 0x01 << reg1;
 
-    uint8_t mask = 0x01 << n;
-
-    if (r == 0x06) {
-        if (debug_) { printf("BIT test %d in (HL)\n", n); }
+    if (reg2 == 0x06) {
         // Calculate if Zero flag needs to be set
-        ((addressBus_[getHL()] & mask) == 0) ? setZ(true) : setZ(false);
+        setZ((addressBus_[getHL()] & mask) == 0);
+        if (debug_) { printf("BIT %d, (HL)\n", reg1); }
     }
     else {
-        if (debug_) { printf("BIT test %d in %c\n", n, regNames_[r]); }
         // Calculate if Zero flag needs to be set
-        ((registers_[r] & mask) == 0) ? setZ(true) : setZ(false);
+        setZ((registers_[reg2] & mask) == 0);
+        if (debug_) { printf("BIT %d, %c\n", reg1, regNames_[reg2]); }
     }
 
     // Set H flag to 1, N flag to 0
@@ -997,43 +994,34 @@ void CPU::BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setN(false);
 }
 
-void CPU::RES(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r = instruction & 0x07;
-    uint8_t n = (instruction & 0x38) >> 3;
+void CPU::RES(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    uint8_t mask = (0x01 << reg1) ^ 0xFF;
 
-    uint8_t mask = (0x01 << n) ^ 0xFF;
-
-    if (r == 0x06) {
-        if (debug_) { printf("RES bit %d in (HL)\n", n); }
+    if (reg2 == 0x06) {
         addressBus_[getHL()] &= mask;
+        if (debug_) { printf("RES %d, (HL)\n", reg1); }
     }
     else {
-        if (debug_) { printf("RES bit %d in %c\n", n, regNames_[r]); }
-        registers_[r] &= mask;
+        registers_[reg2] &= mask;
+        if (debug_) { printf("RES %d, %c\n", reg1, regNames_[reg2]); }
     }
 }
 
-void CPU::SET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r = instruction & 0x07;
-    uint8_t n = (instruction & 0x38) >> 3;
+void CPU::SET(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    uint8_t mask = 0x01 << reg1;
 
-    uint8_t mask = 0x01 << n;
-
-    if (r == 0x06) {
-        if (debug_) { printf("SET bit %d in (HL)\n", n); }
+    if (reg2 == 0x06) {
         addressBus_[getHL()] |= mask;
+        if (debug_) { printf("SET %d, (HL)\n", reg1); }
     }
     else {
-        if (debug_) { printf("SET bit %d in %c\n", n, regNames_[r]); }
-        registers_[r] |= mask;
+        registers_[reg2] |= mask;
+        if (debug_) { printf("SET %d, %c\n", reg1, regNames_[reg2]); }
     }
 }
 
-void CPU::CALL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-    if (r1 == 0x05) {
+void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x05) {
         uint8_t lAddr = addressBus_[++PC_];
         uint8_t hAddr = addressBus_[++PC_];
         //readNextVal(&SP_, false) = 0x00FF & PC_;
