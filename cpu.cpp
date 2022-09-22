@@ -1015,14 +1015,39 @@ void CPU::SET(uint8_t op, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
-    if (reg2 == 0x05) {
-        uint8_t lAddr = addressBus_[++PC_];
-        uint8_t hAddr = addressBus_[++PC_];
-        //readNextVal(&SP_, false) = 0x00FF & PC_;
-        //readNextVal(&SP_, false) = (0xFF00 & PC_) >> 8;
-        PC_ = (hAddr << 8) + lAddr;
+    uint8_t lAddr = addressBus_[++PC_];
+    uint8_t hAddr = addressBus_[++PC_];
+
+    if (reg2 == 0x04) {
+        switch (reg1)
+        {
+        case 0x00:
+            if (debug_) { printf("CALL NZ 0x%02X%02X\n", hAddr, lAddr); }
+            if (getZ()) { return; }
+            break;
+        case 0x01:
+            if (debug_) { printf("CALL Z 0x%02X%02X\n", hAddr, lAddr); }
+            if (!getZ()) { return; }
+            break;
+        case 0x02:
+            if (debug_) { printf("CALL NC 0x%02X%02X\n", hAddr, lAddr); }
+            if (getC()) { return; }
+            break;
+        case 0x03:
+            if (debug_) { printf("CALL C 0x%02X%02X\n", hAddr, lAddr); }
+            if (!getC()) { return; }
+            break;
+        default:
+            break;
+        }
+    }
+    else {
         if (debug_) { printf("CALL 0x%02X%02X\n", hAddr, lAddr); }
     }
+
+    addressBus_[--SP_] = 0x00FF & PC_;
+    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+    PC_ = (hAddr << 8) + lAddr;
 }
 
 void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
