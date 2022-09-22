@@ -192,10 +192,8 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1)
             {
             case 0x00:
-                PC_ -= 1;
-                lVal = addressBus_[++PC_];
-                hVal = addressBus_[++PC_];
-                PC_ += 1;
+                lVal = addressBus_[SP_++];
+                hVal = addressBus_[SP_++];
                 setBC(hVal, lVal);
                 if (debug_) { printf("POP BC\n"); }
                 break;
@@ -231,24 +229,23 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1)
             {
             case 0x00:
-                //readNextVal(&SP_, false);
-                //readNextVal(&SP_, false) = registers_[B];
-                //readNextVal(&SP_, false) = registers_[C];
+                addressBus_[--SP_] = registers_[B];
+                addressBus_[--SP_] = registers_[C];
                 if (debug_) { printf("PUSH BC\n"); }
                 break;
             case 0x02:
-                //readNextVal(&SP_, false) = registers_[D];
-                //readNextVal(&SP_, false) = registers_[E];
+                addressBus_[--SP_] = registers_[D];
+                addressBus_[--SP_] = registers_[E];
                 if (debug_) { printf("PUSH DE\n"); }
                 break;
             case 0x04:
-                //readNextVal(&SP_, false) = registers_[H];
-                //readNextVal(&SP_, false) = registers_[L];
+                addressBus_[--SP_] = registers_[H];
+                addressBus_[--SP_] = registers_[L];
                 if (debug_) { printf("PUSH HL\n"); }
                 break;
             case 0x06:
-                //readNextVal(&SP_, false) = this-registers_[A];
-                //readNextVal(&SP_, false) = registers_[F];
+                addressBus_[--SP_] = registers_[A];
+                addressBus_[--SP_] = registers_[F];
                 if (debug_) { printf("PUSH AF\n"); }
                 break;
             case 0x07:
@@ -257,14 +254,14 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
                 setHL(result);
 
                 // Calculate if Carry flag needs to be set
-                (val > 0 && result < SP_) ? setC(true) : setC(false);
+                setC(val > 0 && result < SP_);
                 // Calculate if Half-Carry flag needs to be set
-                (val > 0 && (result & 0x0FFF) < (SP_ & 0xFFF)) ? setH(true) : setH(false);
+                setH(val > 0 && (result & 0x0FFF) < (SP_ & 0xFFF));
                 // Set N and Z flags to 0
                 setN(false);
                 setZ(false);
 
-                if (debug_) { printf("LD SP, HL\n"); }
+                if (debug_) { printf("HL, SP+%d\n", val); }
                 break;
             default:
                 break;
