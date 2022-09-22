@@ -100,6 +100,7 @@ private:
     static std::map<uint8_t, FunctionPointer> instructionMethods2_;
     uint16_t PC_;
     uint16_t SP_;
+    bool cbPrefx_ = false;
     bool isHalted_ = false;
     // Only for debug print statements
     bool debug_ = false;

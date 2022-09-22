@@ -40,7 +40,7 @@ void CPU::run() {
 void CPU::step() {
     uint8_t instruction = addressBus_[PC_];
     execute(instruction);
-    if (debug_) { this->printRegs(); }
+    if (debug_) { printRegs(); }
 }
 
 void CPU::execute(uint8_t instruction) {
@@ -48,7 +48,7 @@ void CPU::execute(uint8_t instruction) {
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
     (this->*instructionMethods1_[instruction])(opcode, register1, register2);
-    this->PC_ += 1;
+    PC_ += 1;
 }
 
 void CPU::LD_R_to_R(uint8_t op, uint8_t reg1, uint8_t reg2) {
@@ -188,29 +188,29 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
                 lVal = addressBus_[++PC_];
                 hVal = addressBus_[++PC_];
                 PC_ += 1;
-                this->setBC(hVal, lVal);
+                setBC(hVal, lVal);
                 if (debug_) { printf("POP BC\n"); }
                 break;
             case 0x02:
-                lVal = this->addressBus_[this->SP_++];
-                hVal = this->addressBus_[this->SP_++];
-                this->setDE(hVal, lVal);
+                lVal = addressBus_[SP_++];
+                hVal = addressBus_[SP_++];
+                setDE(hVal, lVal);
                 if (debug_) { printf("POP DE\n"); }
                 break;
             case 0x04:
-                lVal = this->addressBus_[this->SP_++];
-                hVal = this->addressBus_[this->SP_++];
-                this->setHL(hVal, lVal);
+                lVal = addressBus_[SP_++];
+                hVal = addressBus_[SP_++];
+                setHL(hVal, lVal);
                 if (debug_) { printf("POP HL\n"); }
                 break;
             case 0x06:
-                lVal = this->addressBus_[this->SP_++];
-                hVal = this->addressBus_[this->SP_++];
-                this->setAF(hVal, lVal);
+                lVal = addressBus_[SP_++];
+                hVal = addressBus_[SP_++];
+                setAF(hVal, lVal);
                 if (debug_) { printf("POP AF\n"); }
                 break;
             case 0x07:
-                this->SP_ = this->getHL();
+                SP_ = getHL();
                 if (debug_) { printf("LD SP, HL\n"); }
                 break;
             default:
@@ -240,21 +240,21 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
                 break;
             case 0x06:
                 //readNextVal(&SP_, false) = this-registers_[A];
-                //readNextVal(&SP_, false) = this->registers_[F];
+                //readNextVal(&SP_, false) = registers_[F];
                 if (debug_) { printf("PUSH AF\n"); }
                 break;
             case 0x07:
                 val = addressBus_[++PC_];
-                result = this->SP_ + val;
-                this->setHL(result);
+                result = SP_ + val;
+                setHL(result);
 
                 // Calculate if Carry flag needs to be set
-                (val > 0 && result < this->SP_) ? this->setC(true) : this->setC(false);
+                (val > 0 && result < SP_) ? setC(true) : setC(false);
                 // Calculate if Half-Carry flag needs to be set
-                (val > 0 && (result & 0x0FFF) < (this->SP_ & 0xFFF)) ? this->setH(true) : this->setH(false);
+                (val > 0 && (result & 0x0FFF) < (SP_ & 0xFFF)) ? setH(true) : setH(false);
                 // Set N and Z flags to 0
-                this->setN(false);
-                this->setZ(false);
+                setN(false);
+                setZ(false);
 
                 if (debug_) { printf("LD SP, HL\n"); }
                 break;
@@ -270,25 +270,25 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
         switch (reg1)
         {
         case 0x00:
-            this->setBC(hVal, lVal);
+            setBC(hVal, lVal);
             if (debug_) { printf("LD BC, 0x%02X%02X\n", hVal, lVal); }
             break;
         case 0x01:
             addr = (hVal << 8) + lVal;
-            this->addressBus_[addr] = this->getSP() & 0x00FF;
-            this->addressBus_[addr + 1] = (this->getSP() & 0xFF00) >> 8;
+            addressBus_[addr] = getSP() & 0x00FF;
+            addressBus_[addr + 1] = (getSP() & 0xFF00) >> 8;
             if (debug_) { printf("LD (0x%04X), SP\n", addr); }
             break;
         case 0x02:
-            this->setDE(hVal, lVal);
+            setDE(hVal, lVal);
             if (debug_) { printf("LD DE, 0x%02X%02X\n", hVal, lVal); }
             break;
         case 0x04:
-            this->setHL(hVal, lVal);
+            setHL(hVal, lVal);
             if (debug_) { printf("LD HL, 0x%02X%02X\n", hVal, lVal); }
             break;
         case 0x06:
-            this->SP_ = (hVal << 8) + lVal;
+            SP_ = (hVal << 8) + lVal;
             if (debug_) { printf("LD SP, 0x%02X%02X\n", hVal, lVal); }
             break;
         default:
@@ -303,7 +303,7 @@ void CPU::JP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
 
     if (r1 == 0x01) {
-        this->PC_ = this->getHL() - 1;
+        PC_ = getHL() - 1;
         if (debug_) { printf("JP HL\n"); }
     }
     else if (r1 == 0x02) {
@@ -315,31 +315,31 @@ void CPU::JP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         {
         case 0x00:
             if (debug_) { printf("JP NZ 0x%04X\n", addr); }
-            if (this->getZ()) { return; }
+            if (getZ()) { return; }
             break;
         case 0x01:
             if (debug_) { printf("JP Z 0x%04X\n", addr); }
-            if (!this->getZ()) { return; }
+            if (!getZ()) { return; }
             break;
         case 0x02:
             if (debug_) { printf("JP NC 0x%04X\n", addr); }
-            if (this->getC()) { return; }
+            if (getC()) { return; }
             break;
         case 0x03:
             if (debug_) { printf("JP C 0x%04X\n", addr); }
-            if (!this->getC()) { return; }
+            if (!getC()) { return; }
             break;
         default:
             break;
         }
         
-        this->PC_ = addr - 1;
+        PC_ = addr - 1;
     }
     else if (r1 == 0x03) {
         uint8_t lVal = addressBus_[++PC_];
         uint8_t hVal = addressBus_[++PC_];
         uint16_t addr = (hVal << 8) + lVal;
-        this->PC_ = addr - 1;
+        PC_ = addr - 1;
         if (debug_) { printf("JP 0x%04X\n", addr); }
     }
 }
@@ -350,7 +350,7 @@ void CPU::JR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
     if (r2 == 0x03) {
         int8_t nVal = addressBus_[++PC_];
-        this->PC_ += nVal;
+        PC_ += nVal;
         if (debug_) { printf("JR \n"); }
     }
     else {
@@ -360,25 +360,25 @@ void CPU::JR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         {
         case 0x04:
             if (debug_) { printf("JR NZ 0x%02X\n", nVal); }
-            if (this->getZ()) { return; }
+            if (getZ()) { return; }
             break;
         case 0x05:
             if (debug_) { printf("JR Z 0x%02X\n", nVal); }
-            if (!this->getZ()) { return; }
+            if (!getZ()) { return; }
             break;
         case 0x06:
             if (debug_) { printf("JR NC 0x%02X\n", nVal); }
-            if (this->getC()) { return; }
+            if (getC()) { return; }
             break;
         case 0x07:
             if (debug_) { printf("JR C 0x%02X\n", nVal); }
-            if (!this->getC()) { return; }
+            if (!getC()) { return; }
             break;
         default:
             break;
         }
 
-        this->PC_ += nVal;
+        PC_ += nVal;
     }
 }
 
@@ -710,76 +710,156 @@ void CPU::DEC_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
     }
 }
 
-void CPU::CBPrefix(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+void CPU::CBPrefix(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (debug_) { printf("CB Prefix\n"); }
-    instruction = addressBus_[++PC_];
-    (this->*instructionMethods2_[instruction])(instruction, 0, 0);
+
+    uint8_t instruction = addressBus_[++PC_];
+    uint8_t opcode = (instruction & 0b11000000) >> 6;
+    uint8_t register1 = (instruction & 0b00111000) >> 3;
+    uint8_t register2 = (instruction & 0b00000111);
+    cbPrefx_ = true;
+    (this->*instructionMethods2_[instruction])(opcode, register1, register2);
+    cbPrefx_ = false;
 }
 
-void CPU::RLC(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-    if (r1 == 0x06) {
-        uint8_t rVal = this->addressBus_[this->getHL()];
+void CPU::RLC(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
 
         // Calculate if Carry flag needs to be set
-        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
-        this->addressBus_[this->getHL()] = (rVal << 8) + this->getC();
+        setC(rVal >= 0b10000000);
+        addressBus_[getHL()] = (rVal << 8) + getC();
 
         // Calculate if Zero flag needs to be set
-        (this->addressBus_[this->getHL()] == 0x00) ? this->setZ(true) : this->setZ(false);
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("RLC (HL)\n"); }
     }
     else {
-        uint8_t rVal = this->registers_[r1];
+        uint8_t rVal = registers_[reg2];
 
         // Calculate if Carry flag needs to be set
-        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
-        this->registers_[r1] = (rVal << 8) + this->getC();
+        setC(rVal >= 0b10000000);
+        registers_[reg2] = (rVal << 1) + getC();
 
         // Calculate if Zero flag needs to be set
-        (this->registers_[r1] == 0x00) ? this->setZ(true) : this->setZ(false);
+        if (cbPrefx_) {
+            setZ(registers_[reg2] == 0x00);
+            if (debug_) { printf("RLC %c\n", regNames_[reg2]); }
+        }
+        else {
+            setZ(false);
+            if (debug_) { printf("RLCA\n"); }
+        }
     }
 
     // Set H and N flags to 0
-    this->setH(false);
-    this->setN(false);
+    setH(false);
+    setN(false);
 }
 
-void CPU::RRC(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
-}
+void CPU::RRC(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
 
-void CPU::RL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-    if (r1 == 0x06) {
-        uint8_t rVal = this->addressBus_[this->getHL()];
-
-        this->addressBus_[this->getHL()] = (rVal << 8) + this->getC();
-        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
+        // Calculate if Carry flag needs to be set
+        setC(rVal % 2);
+        addressBus_[getHL()] = (rVal >> 1) + (getC() << 7);
 
         // Calculate if Zero flag needs to be set
-        (this->addressBus_[this->getHL()] == 0x00) ? this->setZ(true) : this->setZ(false);
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("RRC (HL)\n"); }
     }
     else {
-        uint8_t rVal = this->registers_[r1];
+        uint8_t rVal = registers_[reg2];
 
-        this->registers_[r1] = (rVal << 8) + this->getC();
-        (rVal > 0x7F) ? this->setC(true) : this->setC(false);
+        // Calculate if Carry flag needs to be set
+        setC(rVal % 2);
+        registers_[reg2] = (rVal >> 1) + (getC() << 7);
 
         // Calculate if Zero flag needs to be set
-        (this->registers_[r1] == 0x00) ? this->setZ(true) : this->setZ(false);
+        if (cbPrefx_) {
+            setZ(registers_[reg2] == 0x00);
+            if (debug_) { printf("RRC %c\n", regNames_[reg2]); }
+        }
+        else {
+            setZ(false);
+            if (debug_) { printf("RRCA\n"); }
+        }
     }
 
     // Set H and N flags to 0
-    this->setH(false);
-    this->setN(false);
+    setH(false);
+    setN(false);
 }
 
-void CPU::RR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
+void CPU::RL(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
+
+        addressBus_[getHL()] = (rVal << 1) + getC();
+        // Calculate if Carry flag needs to be set
+        setC(rVal >= 0b10000000);
+
+        // Calculate if Zero flag needs to be set
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("RL (HL)\n"); }
+    }
+    else {
+        uint8_t rVal = registers_[reg2];
+
+        registers_[reg2] = (rVal << 8) + getC();
+        // Calculate if Carry flag needs to be set
+        setC(rVal >= 0b10000000);
+
+        // Calculate if Zero flag needs to be set
+        if (cbPrefx_) {
+            setZ(registers_[reg2] == 0x00);
+            if (debug_) { printf("RL %c\n", regNames_[reg2]); }
+        }
+        else {
+            setZ(false);
+            if (debug_) { printf("RLA\n"); }
+        }
+    }
+
+    // Set H and N flags to 0
+    setH(false);
+    setN(false);
+}
+
+void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
+
+        addressBus_[getHL()] = (rVal >> 1) + (getC() << 7);
+        // Calculate if Carry flag needs to be set
+        setC(rVal % 2);
+
+        // Calculate if Zero flag needs to be set
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("RR (HL)\n"); }
+    }
+    else {
+        uint8_t rVal = registers_[reg2];
+
+        registers_[reg2] = (rVal >> 1) + (getC() << 7);
+        // Calculate if Carry flag needs to be set
+        setC(rVal % 2);
+
+        // Calculate if Zero flag needs to be set
+        if (cbPrefx_) {
+            setZ(registers_[reg2] == 0x00);
+            if (debug_) { printf("RR %c\n", regNames_[reg2]); }
+        }
+        else {
+            setZ(false);
+            if (debug_) { printf("RRA\n"); }
+        }
+    }
+
+    // Set H and N flags to 0
+    setH(false);
+    setN(false);
 }
 
 void CPU::SLA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
@@ -807,17 +887,17 @@ void CPU::BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     if (r == 0x06) {
         if (debug_) { printf("BIT test %d in (HL)\n", n); }
         // Calculate if Zero flag needs to be set
-        ((this->addressBus_[this->getHL()] & mask) == 0) ? this->setZ(true) : this->setZ(false);
+        ((addressBus_[getHL()] & mask) == 0) ? setZ(true) : setZ(false);
     }
     else {
         if (debug_) { printf("BIT test %d in %c\n", n, regNames_[r]); }
         // Calculate if Zero flag needs to be set
-        ((this->registers_[r] & mask) == 0) ? this->setZ(true) : this->setZ(false);
+        ((registers_[r] & mask) == 0) ? setZ(true) : setZ(false);
     }
 
     // Set H flag to 1, N flag to 0
-    this->setH(true);
-    this->setN(false);
+    setH(true);
+    setN(false);
 }
 
 void CPU::RES(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
@@ -828,11 +908,11 @@ void CPU::RES(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
     if (r == 0x06) {
         if (debug_) { printf("RES bit %d in (HL)\n", n); }
-        this->addressBus_[this->getHL()] &= mask;
+        addressBus_[getHL()] &= mask;
     }
     else {
         if (debug_) { printf("RES bit %d in %c\n", n, regNames_[r]); }
-        this->registers_[r] &= mask;
+        registers_[r] &= mask;
     }
 }
 
@@ -844,11 +924,11 @@ void CPU::SET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
     if (r == 0x06) {
         if (debug_) { printf("SET bit %d in (HL)\n", n); }
-        this->addressBus_[this->getHL()] |= mask;
+        addressBus_[getHL()] |= mask;
     }
     else {
         if (debug_) { printf("SET bit %d in %c\n", n, regNames_[r]); }
-        this->registers_[r] |= mask;
+        registers_[r] |= mask;
     }
 }
 
@@ -859,9 +939,9 @@ void CPU::CALL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     if (r1 == 0x05) {
         uint8_t lAddr = addressBus_[++PC_];
         uint8_t hAddr = addressBus_[++PC_];
-        //readNextVal(&SP_, false) = 0x00FF & this->PC_;
-        //readNextVal(&SP_, false) = (0xFF00 & this->PC_) >> 8;
-        this->PC_ = (hAddr << 8) + lAddr;
+        //readNextVal(&SP_, false) = 0x00FF & PC_;
+        //readNextVal(&SP_, false) = (0xFF00 & PC_) >> 8;
+        PC_ = (hAddr << 8) + lAddr;
         if (debug_) { printf("CALL 0x%02X%02X\n", hAddr, lAddr); }
     }
 }
@@ -872,9 +952,9 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
 void CPU::printRegs() {
     printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nPC: 0x%04X\nSP: 0x%04X\n\n", 
-        this->registers_[A], this->registers_[F], this->registers_[B], this->registers_[C],
-        this->registers_[D], this->registers_[E], this->registers_[H], this->registers_[L],
-        this->PC_, this->SP_);
+        registers_[A], registers_[F], registers_[B], registers_[C],
+        registers_[D], registers_[E], registers_[H], registers_[L],
+        PC_, SP_);
 }
 
 void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
@@ -882,122 +962,122 @@ void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 uint16_t CPU::getAF() {
-    return (this->registers_[A] << 8) + this->registers_[F];
+    return (registers_[A] << 8) + registers_[F];
 }
 
 uint16_t CPU::getBC() {
-    return (this->registers_[B] << 8) + this->registers_[C];
+    return (registers_[B] << 8) + registers_[C];
 }
 
 uint16_t CPU::getDE() {
-    return (this->registers_[D] << 8) + this->registers_[E];
+    return (registers_[D] << 8) + registers_[E];
 }
 
 uint16_t CPU::getHL() {
-    return (this->registers_[H] << 8) + this->registers_[L];
+    return (registers_[H] << 8) + registers_[L];
 }
 
 uint16_t CPU::getSP() {
-    return this->SP_;
+    return SP_;
 }
 
 void CPU::setAF(uint8_t hVal, uint8_t lVal) {
-    this->registers_[A] = hVal;
-    this->registers_[F] = lVal;
+    registers_[A] = hVal;
+    registers_[F] = lVal;
 }
 
 void CPU::setBC(uint8_t hVal, uint8_t lVal) {
-    this->registers_[B] = hVal;
-    this->registers_[C] = lVal;
+    registers_[B] = hVal;
+    registers_[C] = lVal;
 }
 
 void CPU::setDE(uint8_t hVal, uint8_t lVal) {
-    this->registers_[D] = hVal;
-    this->registers_[E] = lVal;
+    registers_[D] = hVal;
+    registers_[E] = lVal;
 }
 
 void CPU::setHL(uint8_t hVal, uint8_t lVal) {
-    this->registers_[H] = hVal;
-    this->registers_[L] = lVal;
+    registers_[H] = hVal;
+    registers_[L] = lVal;
 }
 
 void CPU::setAF(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers_[A] = hVal;
-    this->registers_[F] = lVal;
+    registers_[A] = hVal;
+    registers_[F] = lVal;
 }
 
 void CPU::setBC(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers_[B] = hVal;
-    this->registers_[C] = lVal;
+    registers_[B] = hVal;
+    registers_[C] = lVal;
 }
 
 void CPU::setDE(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers_[D] = hVal;
-    this->registers_[E] = lVal;
+    registers_[D] = hVal;
+    registers_[E] = lVal;
 }
 
 void CPU::setHL(uint16_t value) {
     uint8_t hVal = uint8_t(value >> 8);
     uint8_t lVal = uint8_t(value & 0x00FF);
-    this->registers_[H] = hVal;
-    this->registers_[L] = lVal;
+    registers_[H] = hVal;
+    registers_[L] = lVal;
 }
 
 bool CPU::getC() {
-    return this->registers_[F] & 0b00010000;
+    return registers_[F] & 0b00010000;
 }
 
 bool CPU::getH() {
-    return this->registers_[F] & 0b00100000;
+    return registers_[F] & 0b00100000;
 }
 
 bool CPU::getN() {
-    return this->registers_[F] & 0b01000000;
+    return registers_[F] & 0b01000000;
 }
 
 bool CPU::getZ() {
-    return this->registers_[F] & 0b10000000;
+    return registers_[F] & 0b10000000;
 }
 
 void CPU::setC(bool val) {
     if (val == true) {
-        this->registers_[F] |= 0b00010000;
+        registers_[F] |= 0b00010000;
     }
     else {
-        this->registers_[F] &= 0b11101111;
+        registers_[F] &= 0b11101111;
     }
 }
 
 void CPU::setH(bool val) {
     if (val == true) {
-        this->registers_[F] |= 0b00100000;
+        registers_[F] |= 0b00100000;
     }
     else {
-        this->registers_[F] &= 0b11011111;
+        registers_[F] &= 0b11011111;
     }
 }
 
 void CPU::setN(bool val) {
     if (val == true) {
-        this->registers_[F] |= 0b01000000;
+        registers_[F] |= 0b01000000;
     }
     else {
-        this->registers_[F] &= 0b10111111;
+        registers_[F] &= 0b10111111;
     }
 }
 
 void CPU::setZ(bool val) {
     if (val == true) {
-        this->registers_[F] |= 0b10000000;
+        registers_[F] |= 0b10000000;
     }
     else {
-        this->registers_[F] &= 0b01111111;
+        registers_[F] &= 0b01111111;
     }
 }
 
