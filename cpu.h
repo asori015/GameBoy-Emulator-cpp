@@ -2,6 +2,7 @@
 
 #include <map>
 #include <functional>
+#include <string>
 #include "machine.h"
 
 class Machine;
@@ -12,6 +13,7 @@ public:
 
     CPU(Machine*);
     void loadBIOS(const uint8_t*, int, uint16_t);
+    void loadGameROM(std::string);
     void step();
     void execute(uint8_t);
     void printRegs();

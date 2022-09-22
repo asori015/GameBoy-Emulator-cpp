@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <fstream>
 #include "cpu.h"
 #include "bootroms.h"
 
@@ -9,6 +10,7 @@ CPU::CPU(Machine* machine) {
     this->PC_ = 0;
     this->SP_ = 0;
     this->debug_ = true;
+    this->loadGameROM("");
     this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
     //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
     this->run();
@@ -22,6 +24,12 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
     }
 }
 
+void CPU::loadGameROM(std::string filePath) {
+    filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
+    std::ifstream gameFile(filePath, std::ios::binary);
+    gameFile.read((char*)(addressBus_), 0x7FFF);
+}
+
 // This function is temporary, step function should be called by the Machine class
 void CPU::run() {
     //debug = false;
@@ -31,7 +39,7 @@ void CPU::run() {
 
     debug_ = true;
     int x = 0; // Temporary set up, this loop should be infinite
-    while (x < 50) {
+    while (x < 16) {
         step();
         x++;
     }
@@ -297,89 +305,78 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
     }
 }
 
-void CPU::JP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-
-    if (r1 == 0x01) {
+void CPU::JP(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x01) {
         PC_ = getHL() - 1;
         if (debug_) { printf("JP HL\n"); }
     }
-    else if (r1 == 0x02) {
+    else {
         uint8_t lVal = addressBus_[++PC_];
         uint8_t hVal = addressBus_[++PC_];
         uint16_t addr = (hVal << 8) + lVal;
 
-        switch (r2)
-        {
-        case 0x00:
-            if (debug_) { printf("JP NZ 0x%04X\n", addr); }
-            if (getZ()) { return; }
-            break;
-        case 0x01:
-            if (debug_) { printf("JP Z 0x%04X\n", addr); }
-            if (!getZ()) { return; }
-            break;
-        case 0x02:
-            if (debug_) { printf("JP NC 0x%04X\n", addr); }
-            if (getC()) { return; }
-            break;
-        case 0x03:
-            if (debug_) { printf("JP C 0x%04X\n", addr); }
-            if (!getC()) { return; }
-            break;
-        default:
-            break;
+        if (reg2 == 0x02) {
+            switch (reg1)
+            {
+            case 0x00:
+                if (debug_) { printf("JP NZ 0x%04X\n", addr); }
+                if (getZ()) { return; }
+                break;
+            case 0x01:
+                if (debug_) { printf("JP Z 0x%04X\n", addr); }
+                if (!getZ()) { return; }
+                break;
+            case 0x02:
+                if (debug_) { printf("JP NC 0x%04X\n", addr); }
+                if (getC()) { return; }
+                break;
+            case 0x03:
+                if (debug_) { printf("JP C 0x%04X\n", addr); }
+                if (!getC()) { return; }
+                break;
+            default:
+                break;
+            }
         }
-        
+        else {
+            if (debug_) { printf("JP 0x%04X\n", addr); }
+        }
+
         PC_ = addr - 1;
-    }
-    else if (r1 == 0x03) {
-        uint8_t lVal = addressBus_[++PC_];
-        uint8_t hVal = addressBus_[++PC_];
-        uint16_t addr = (hVal << 8) + lVal;
-        PC_ = addr - 1;
-        if (debug_) { printf("JP 0x%04X\n", addr); }
     }
 }
 
 void CPU::JR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
+    int8_t nVal = addressBus_[++PC_];
 
-    if (r2 == 0x03) {
-        int8_t nVal = addressBus_[++PC_];
-        PC_ += nVal;
-        if (debug_) { printf("JR \n"); }
-    }
-    else {
-        int8_t nVal = addressBus_[++PC_];
-
-        switch (r2)
+    if (reg1 != 0x03) {
+        switch (reg1)
         {
         case 0x04:
-            if (debug_) { printf("JR NZ 0x%02X\n", nVal); }
+            if (debug_) { printf("JR NZ %d\n", nVal); }
             if (getZ()) { return; }
             break;
         case 0x05:
-            if (debug_) { printf("JR Z 0x%02X\n", nVal); }
+            if (debug_) { printf("JR Z %d\n", nVal); }
             if (!getZ()) { return; }
             break;
         case 0x06:
-            if (debug_) { printf("JR NC 0x%02X\n", nVal); }
+            if (debug_) { printf("JR NC %d\n", nVal); }
             if (getC()) { return; }
             break;
         case 0x07:
-            if (debug_) { printf("JR C 0x%02X\n", nVal); }
+            if (debug_) { printf("JR C %d\n", nVal); }
             if (!getC()) { return; }
             break;
         default:
             break;
         }
-
-        PC_ += nVal;
     }
+    else {
+        if (debug_) { printf("JR %d\n", nVal); }
+    }
+    
+    PC_ += nVal;
 }
 
 void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
@@ -1043,7 +1040,8 @@ void CPU::printRegs() {
 }
 
 void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    std::cout << std::hex << int(instruction) << " nop" << std::endl;
+    instruction = (instruction << 6) + (reg1 << 3) + reg2;
+    if (debug_) { printf("NOP 0x%02X\n", instruction); }
 }
 
 uint16_t CPU::getAF() {
