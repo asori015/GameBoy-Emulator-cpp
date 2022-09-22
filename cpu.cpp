@@ -417,7 +417,7 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
     // Perform addition to A register
     registers_[A] += nVal + carry;
     // Calculate if Full-Carry flag needs to be set
-    setC((registers_[A] < nVal || registers_[A] < rVal));
+    setC((registers_[A] < rVal));
     // Calculate if Zero flag needs to be set
     setZ(registers_[A] == 0);
     // Set N flag to 0
@@ -425,7 +425,7 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
-    uint8_t rVal = this->registers_[A];
+    uint8_t rVal = registers_[A];
     uint8_t nVal;
     bool carry = false;
 
@@ -615,107 +615,95 @@ void CPU::DEC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     setN(true);
 }
 
-void CPU::ADD_16_BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-    if (r1 == 0x00) {
-        int8_t nVal = addressBus_[++PC_];
-        uint16_t rVal = this->SP_;
-        this->SP_ += nVal;
+void CPU::ADD_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    if (reg2 == 0x00) {
+        int8_t nVal = addressBus_[++PC_]; // Interpreted as signed value
+        uint16_t rVal = SP_;
+        SP_ += nVal;
         
         // Calculate if Carry flag needs to be set
-        (nVal > 0x00 && this->SP_ < rVal) ? this->setC(true) : this->setC(false);
+        setC(nVal > 0x00 && SP_ < rVal);
         // Calculate if Half-Carry flag needs to be set
-        (nVal > 0x00 && (this->SP_ & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
-        this->setZ(false);
+        setH(nVal > 0x00 && (SP_ & 0x0F00) < (rVal & 0x0F00));
+        // Set Z flag to 0
+        setZ(false);
         if (debug_) { printf("ADD SP, 0x%02X\n", nVal); }
     }
     else {
-        uint16_t rVal = this->getHL();
-        switch (r2)
+        uint16_t rVal = getHL();
+        switch (reg1)
         {
         case 0x01:
-            this->setHL(this->getHL() + this->getBC());
-            // Calculate if Carry flag needs to be set
-            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
-            // Calculate if Half-Carry flag needs to be set
-            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            setHL(getHL() + getBC());
             if (debug_) { printf("ADD HL, BC\n"); }
             break;
         case 0x03:
-            this->setHL(this->getHL() + this->getDE());
-            // Calculate if Carry flag needs to be set
-            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
-            // Calculate if Half-Carry flag needs to be set
-            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            setHL(getHL() + getDE());
             if (debug_) { printf("ADD HL, DE\n"); }
             break;
         case 0x05:
-            this->setHL(this->getHL() + this->getHL());
-            // Calculate if Carry flag needs to be set
-            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
-            // Calculate if Half-Carry flag needs to be set
-            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            setHL(getHL() + getHL());
             if (debug_) { printf("ADD HL, HL\n"); }
             break;
         case 0x07:
-            this->setHL(this->getHL() + this->getSP());
-            // Calculate if Carry flag needs to be set
-            (this->getHL() < rVal) ? this->setC(true) : this->setC(false);
-            // Calculate if Half-Carry flag needs to be set
-            ((this->getHL() & 0x0F00) < (rVal & 0x0F00)) ? this->setH(true) : this->setH(false);
+            setHL(getHL() + getSP());
             if (debug_) { printf("ADD HL, SP\n"); }
             break;
         default:
             break;
         }
 
+        // Calculate if Carry flag needs to be set
+        setC(getHL() < rVal);
+        // Calculate if Half-Carry flag needs to be set
+        setH((getHL() & 0x0F00) < (rVal & 0x0F00));
         // Set N flag to 0
-        this->setN(false);
+        setN(false);
     }
 }
 
 void CPU::INC_16_BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-    switch (r2)
+    switch (reg1)
     {
     case 0x00:
-        this->setBC(this->getBC() + 1);
+        setBC(getBC() + 1);
+        if (debug_) { printf("INC BC\n"); }
         break;
     case 0x02:
-        this->setDE(this->getDE() + 1);
+        setDE(getDE() + 1);
+        if (debug_) { printf("INC DE\n"); }
         break;
     case 0x04:
-        this->setHL(this->getHL() + 1);
+        setHL(getHL() + 1);
+        if (debug_) { printf("INC HL\n"); }
         break;
     case 0x06:
-        this->SP_ += 1;
+        SP_ += 1;
+        if (debug_) { printf("INC SP\n"); }
         break;
     default:
         break;
     }
 }
 
-void CPU::DEC_16_BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t r1 = instruction & 0x07;
-    uint8_t r2 = (instruction & 0x38) >> 3;
-
-    switch (r2)
+void CPU::DEC_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
+    switch (reg1)
     {
     case 0x00:
-        this->setBC(this->getBC() - 1);
+        setBC(getBC() - 1);
+        if (debug_) { printf("DEC BC\n"); }
         break;
     case 0x02:
-        this->setDE(this->getDE() - 1);
+        setDE(getDE() - 1);
+        if (debug_) { printf("DEC DE\n"); }
         break;
     case 0x04:
-        this->setHL(this->getHL() - 1);
+        setHL(getHL() - 1);
+        if (debug_) { printf("DEC HL\n"); }
         break;
     case 0x06:
-        this->SP_ -= 1;
+        SP_ -= 1;
+        if (debug_) { printf("DEC SP\n"); }
         break;
     default:
         break;
