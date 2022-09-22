@@ -32,14 +32,14 @@ void CPU::loadGameROM(std::string filePath) {
 
 // This function is temporary, step function should be called by the Machine class
 void CPU::run() {
-    //debug = false;
-    //while (this->PC != 0x001D) {
-    //    step();
-    //}
+    debug_ = false;
+    while (this->PC_ != 0x0068) {
+        step();
+    }
 
     debug_ = true;
     int x = 0; // Temporary set up, this loop should be infinite
-    while (x < 16) {
+    while (x < 32) {
         step();
         x++;
     }
@@ -1047,11 +1047,41 @@ void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     addressBus_[--SP_] = 0x00FF & PC_;
     addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
-    PC_ = (hAddr << 8) + lAddr;
+    PC_ = (hAddr << 8) + lAddr - 1;
 }
 
 void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
+    if (reg2 == 0x00) {
+        switch (reg1)
+        {
+        case 0x00:
+            if (debug_) { printf("RET NZ\n"); }
+            if (getZ()) { return; }
+            break;
+        case 0x01:
+            if (debug_) { printf("RET Z\n"); }
+            if (!getZ()) { return; }
+            break;
+        case 0x02:
+            if (debug_) { printf("RET NC\n"); }
+            if (getC()) { return; }
+            break;
+        case 0x03:
+            if (debug_) { printf("RET C\n"); }
+            if (!getC()) { return; }
+            break;
+        default:
+            break;
+        }
+    }
+    else {
+        if (debug_) { printf("RET\n"); }
+    }
+
+    uint8_t hAddr = addressBus_[SP_++];
+    uint8_t lAddr = addressBus_[SP_++];
+
+    PC_ = (hAddr << 8) + lAddr;
 }
 
 void CPU::printRegs() {
@@ -1379,7 +1409,7 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0XBD, &CPU::CP},
     {0XBE, &CPU::CP},
     {0XBF, &CPU::CP},
-    {0XC0, &CPU::nop},
+    {0XC0, &CPU::RET},
     {0XC1, &CPU::LD_16_Bit},
     {0XC2, &CPU::JP},
     {0XC3, &CPU::JP},
@@ -1387,15 +1417,15 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0XC5, &CPU::LD_16_Bit},
     {0XC6, &CPU::ADD},
     {0XC7, &CPU::nop},
-    {0XC8, &CPU::nop},
-    {0XC9, &CPU::nop},
+    {0XC8, &CPU::RET},
+    {0XC9, &CPU::RET},
     {0XCA, &CPU::JP},
     {0XCB, &CPU::CBPrefix},
     {0XCC, &CPU::CALL},
     {0XCD, &CPU::CALL},
     {0XCE, &CPU::ADD},
     {0XCF, &CPU::nop},
-    {0XD0, &CPU::nop},
+    {0XD0, &CPU::RET},
     {0XD1, &CPU::LD_16_Bit},
     {0XD2, &CPU::JP},
     {0XD3, &CPU::nop},
@@ -1403,8 +1433,8 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0XD5, &CPU::LD_16_Bit},
     {0XD6, &CPU::SUB},
     {0XD7, &CPU::nop},
-    {0XD8, &CPU::nop},
-    {0XD9, &CPU::nop},
+    {0XD8, &CPU::RET},
+    {0XD9, &CPU::RET},
     {0XDA, &CPU::JP},
     {0XDB, &CPU::nop},
     {0XDC, &CPU::CALL},
