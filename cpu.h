@@ -53,7 +53,6 @@ private:
     void JR(uint8_t, uint8_t, uint8_t);
     void ADD(uint8_t, uint8_t, uint8_t);
     void SUB(uint8_t, uint8_t, uint8_t);
-    void SBC(uint8_t, uint8_t, uint8_t);
     void AND(uint8_t, uint8_t, uint8_t);
     void XOR(uint8_t, uint8_t, uint8_t);
     void OR(uint8_t, uint8_t, uint8_t);

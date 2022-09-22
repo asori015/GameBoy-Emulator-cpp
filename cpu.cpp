@@ -387,12 +387,13 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t nVal;
     bool carry = false;
 
+    // Check if carry bit will be used
     if (reg1 == 0x01) {
         carry = getC();
-        printf("ADC");
+        printf("ADC ");
     }
     else {
-        printf("ADD");
+        printf("ADD ");
     }
 
     // Get the value being used for the calculation with Register A
@@ -412,87 +413,57 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
     }
 
     // Calculate if Half-Carry flag needs to be set
-    this->setH(((nVal & 0x0F) + (rVal & 0x0F) + carry) > 0x0F);
+    setH(((nVal & 0x0F) + (rVal & 0x0F) + carry) > 0x0F);
     // Perform addition to A register
-    this->registers_[A] += nVal + carry;
+    registers_[A] += nVal + carry;
     // Calculate if Full-Carry flag needs to be set
-    this->setC((this->registers_[A] < nVal || this->registers_[A] < rVal));
+    setC((registers_[A] < nVal || registers_[A] < rVal));
     // Calculate if Zero flag needs to be set
-    this->setZ(this->registers_[A] == 0);
+    setZ(registers_[A] == 0);
 
-    this->setN(false);
+    setN(false);
 }
 
-void CPU::SUB(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t encoding = (instruction & 0b11000000) >> 6;
+void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t rVal = this->registers_[A];
     uint8_t nVal;
+    bool carry = false;
 
-    // Get the value being used for the calculation with Register A
-    if (encoding == 0x03) {
-        nVal = addressBus_[++PC_];
-        if (debug_) { printf("SUB A, 0x%02X\n", nVal); }
+    // Check if carry bit will be used
+    if (reg1 == 0x03) {
+        carry = getC();
+        printf("SBC ");
     }
     else {
-        uint8_t r = instruction & 0b00000111;
-        if (r == 0x06) {
-            nVal = this->addressBus_[this->getHL()];
-            if (debug_) { printf("SUB A, (HL)\n"); }
+        printf("SUB ");
+    }
+
+    // Get the value being used for the calculation with Register A
+    if (op == 0x03) {
+        nVal = addressBus_[++PC_];
+        if (debug_) { printf("A, 0x % 02X\n", nVal); }
+    }
+    else {
+        if (reg2 == 0x06) {
+            nVal = addressBus_[getHL()];
+            if (debug_) { printf("A, (HL)\n"); }
         }
         else {
-            nVal = this->registers_[r];
-            if (debug_) { printf("SUB A, %c\n", this->regNames_[r]); }
+            nVal = registers_[reg2];
+            if (debug_) { printf("A, %c\n", regNames_[reg2]); }
         }
     }
 
     // Calculate if Half-Carry flag needs to be set
-    ((nVal & 0x0F) > (rVal & 0x0F)) ? this->setH(true) : this->setH(false);
+    setH((rVal & 0x0F) < (nVal & 0x0F) + carry);
     // Perform subtraction to A register
-    this->registers_[A] -= nVal;
+    registers_[A] -= nVal + carry;
     // Calculate if Full-Carry flag needs to be set
-    (nVal > rVal) ? this->setC(true) : this->setC(false);
+    setC(nVal + carry > rVal);
     // Calculate if Zero flag needs to be set
-    (this->registers_[A] == 0) ? this->setZ(true) : this->setZ(false);
+    setZ(registers_[A] == 0);
 
-    this->setN(true);
-}
-
-void CPU::SBC(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    uint8_t encoding = (instruction & 0b11000000) >> 6;
-    uint8_t rVal = this->registers_[A];
-    uint8_t nVal;
-
-    // Get the value being used for the calculation with Register A
-    if (encoding == 0x03) {
-        nVal = addressBus_[++PC_];
-        if (debug_) { printf("SBC A, 0x%02X\n", nVal); }
-    }
-    else {
-        uint8_t r = instruction & 0b00000111;
-        if (r == 0x06) {
-            nVal = this->addressBus_[this->getHL()];
-            if (debug_) { printf("SBC A, (HL)\n"); }
-        }
-        else {
-            nVal = this->registers_[r];
-            if (debug_) { printf("SBC A, %c\n", this->regNames_[r]); }
-        }
-    }
-
-    // Calculate if Half-Carry flag needs to be set
-    ((rVal & 0x0F) < (nVal & 0x0F) + this->getC()) ? this->setH(true) : this->setH(false);
-    // I don't understand, below line *should* be the right way to calc h-bit, but programming manual
-    // and java translate source says otherwise without much explanation
-    // uint16_t operand = nVal + this->getC();
-    // ((operand <= 0xFF) && ((operand & 0x000F) > (rVal & 0x0F))) ? this->setH(true) : this->setH(false);
-    // Perform subtraction to A register
-    this->registers_[A] -= nVal + this->getC();
-    // Calculate if Full-Carry flag needs to be set
-    (nVal + this->getC() > rVal) ? this->setC(true) : this->setC(false);
-    // Calculate if Zero flag needs to be set
-    (this->registers_[A] == 0) ? this->setZ(true) : this->setZ(false);
-
-    this->setN(true);
+    setN(true);
 }
 
 void CPU::AND(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
@@ -1210,14 +1181,14 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0X95, &CPU::SUB},
     {0X96, &CPU::SUB},
     {0X97, &CPU::SUB},
-    {0X98, &CPU::SBC},
-    {0X99, &CPU::SBC},
-    {0X9A, &CPU::SBC},
-    {0X9B, &CPU::SBC},
-    {0X9C, &CPU::SBC},
-    {0X9D, &CPU::SBC},
-    {0X9E, &CPU::SBC},
-    {0X9F, &CPU::SBC},
+    {0X98, &CPU::SUB},
+    {0X99, &CPU::SUB},
+    {0X9A, &CPU::SUB},
+    {0X9B, &CPU::SUB},
+    {0X9C, &CPU::SUB},
+    {0X9D, &CPU::SUB},
+    {0X9E, &CPU::SUB},
+    {0X9F, &CPU::SUB},
     {0XA0, &CPU::AND},
     {0XA1, &CPU::AND},
     {0XA2, &CPU::AND},
@@ -1280,7 +1251,7 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0XDB, &CPU::nop},
     {0XDC, &CPU::CALL},
     {0XDD, &CPU::nop},
-    {0XDE, &CPU::SBC},
+    {0XDE, &CPU::SUB},
     {0XDF, &CPU::nop},
     {0XE0, &CPU::LD_8_Bit},
     {0XE1, &CPU::LD_16_Bit},
