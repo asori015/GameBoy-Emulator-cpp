@@ -863,19 +863,116 @@ void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::SLA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
+
+        // Calculate if Carry flag needs to be set
+        setC(rVal >= 0b10000000);
+        addressBus_[getHL()] = rVal << 1;
+        
+        // Calculate if Zero flag needs to be set
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("SLA (HL)\n"); }
+    }
+    else {
+        uint8_t rVal = registers_[reg2];
+
+        // Calculate if Carry flag needs to be set
+        setC(rVal >= 0b10000000);
+        registers_[reg2] = rVal << 1;
+
+        // Calculate if Zero flag needs to be set
+        setZ(registers_[reg2] == 0x00);
+        if (debug_) { printf("SLA %c\n", regNames_[reg2]); }
+    }
+
+    // Set H and N flags to 0
+    setH(false);
+    setN(false);
 }
 
 void CPU::SRA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
+
+        // Calculate if Carry flag needs to be set
+        setC(rVal >= 0b10000000);
+        addressBus_[getHL()] = (rVal >> 1) + (getC() << 7);
+        setC(rVal % 2);
+
+        // Calculate if Zero flag needs to be set
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("SRA (HL)\n"); }
+    }
+    else {
+        uint8_t rVal = registers_[reg2];
+
+        // Calculate if Carry flag needs to be set
+        setC(rVal >= 0b10000000);
+        registers_[reg2] = (rVal >> 1) + (getC() << 7);
+        setC(rVal % 2);
+
+        // Calculate if Zero flag needs to be set
+        setZ(registers_[reg2] == 0x00);
+        if (debug_) { printf("SRA %c\n", regNames_[reg2]); }
+    }
+
+    // Set H and N flags to 0
+    setH(false);
+    setN(false);
 }
 
 void CPU::SWAP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
+        addressBus_[getHL()] = (rVal << 4) + (rVal >> 4);
+
+        // Calculate if Zero flag needs to be set
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("SWAP (HL)\n"); }
+    }
+    else {
+        uint8_t rVal = registers_[reg2];
+        registers_[reg2] = (rVal << 4) + (rVal >> 4);
+
+        // Calculate if Zero flag needs to be set
+        setZ(registers_[reg2] == 0x00);
+        if (debug_) { printf("SWAP %c\n", regNames_[reg2]); }
+    }
+
+    // Set C, H and N flags to 0
+    setC(false);
+    setH(false);
+    setN(false);
 }
 
 void CPU::SRL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    ;
+    if (reg2 == 0x06) {
+        uint8_t rVal = addressBus_[getHL()];
+
+        // Calculate if Carry flag needs to be set
+        setC(rVal % 2);
+        addressBus_[getHL()] = (rVal >> 1);
+
+        // Calculate if Zero flag needs to be set
+        setZ(addressBus_[getHL()] == 0x00);
+        if (debug_) { printf("SRA (HL)\n"); }
+    }
+    else {
+        uint8_t rVal = registers_[reg2];
+
+        // Calculate if Carry flag needs to be set
+        setC(rVal % 2);
+        registers_[reg2] = (rVal >> 1);
+
+        // Calculate if Zero flag needs to be set
+        setZ(registers_[reg2] == 0x00);
+        if (debug_) { printf("SRA %c\n", regNames_[reg2]); }
+    }
+
+    // Set H and N flags to 0
+    setH(false);
+    setN(false);
 }
 
 void CPU::BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
@@ -1089,7 +1186,7 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0X04, &CPU::INC},
     {0X05, &CPU::DEC},
     {0X06, &CPU::LD_8_Bit},
-    {0X07, &CPU::nop},
+    {0X07, &CPU::RLC},
     {0X08, &CPU::LD_16_Bit},
     {0X09, &CPU::ADD_16_BIT},
     {0X0A, &CPU::LD_8_Bit},
@@ -1097,7 +1194,7 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0X0C, &CPU::INC},
     {0X0D, &CPU::DEC},
     {0X0E, &CPU::LD_8_Bit},
-    {0X0F, &CPU::nop},
+    {0X0F, &CPU::RRC},
     {0X10, &CPU::nop},
     {0X11, &CPU::LD_16_Bit},
     {0X12, &CPU::LD_8_Bit},
@@ -1105,7 +1202,7 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0X14, &CPU::INC},
     {0X15, &CPU::DEC},
     {0X16, &CPU::LD_8_Bit},
-    {0X17, &CPU::nop},
+    {0X17, &CPU::RL},
     {0X18, &CPU::JR},
     {0X19, &CPU::ADD_16_BIT},
     {0X1A, &CPU::LD_8_Bit},
@@ -1113,7 +1210,7 @@ std::map<uint8_t, CPU::FunctionPointer> CPU::instructionMethods1_ = {
     {0X1C, &CPU::INC},
     {0X1D, &CPU::DEC},
     {0X1E, &CPU::LD_8_Bit},
-    {0X1F, &CPU::nop},
+    {0X1F, &CPU::RR},
     {0X20, &CPU::JR},
     {0X21, &CPU::LD_16_Bit},
     {0X22, &CPU::LD_8_Bit},
