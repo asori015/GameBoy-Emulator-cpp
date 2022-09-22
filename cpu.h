@@ -52,7 +52,6 @@ private:
     void JP(uint8_t, uint8_t, uint8_t);
     void JR(uint8_t, uint8_t, uint8_t);
     void ADD(uint8_t, uint8_t, uint8_t);
-    void ADC(uint8_t, uint8_t, uint8_t);
     void SUB(uint8_t, uint8_t, uint8_t);
     void SBC(uint8_t, uint8_t, uint8_t);
     void AND(uint8_t, uint8_t, uint8_t);
@@ -95,10 +94,6 @@ private:
     void setH(bool);
     void setN(bool);
     void setZ(bool);
-
-    // Additional helper functions
-
-    uint8_t readNextVal(uint16_t*, bool);
 
     Machine* machine_;
     uint8_t* registers_ = new uint8_t[8]{ 0 };
