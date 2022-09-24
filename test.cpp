@@ -100,12 +100,15 @@ void Test::testLD() {
             cpu->step();
         }
         if (!this->compare(testCases[i].AF, testCases[i].BC, testCases[i].DE, testCases[i].HL, testCases[i].SP)) {
-            std::cout << "LD Test Failed" << std::endl;
+            std::cout << "LD Test " << i << " Failed" << std::endl;
             return;
+        }
+        else {
+            std::cout << "LD Test " << i << " Passed!" << std::endl;
         }
     }
 
-    std::cout << "LD Test Passed!" << std::endl;
+    std::cout << "LD Tests Passed!" << std::endl;
 
     delete cpu;
 }
@@ -205,12 +208,15 @@ void Test::testArithmetic() {
             cpu->step();
         }
         if (!this->compare(testCases[i].AF, testCases[i].BC, testCases[i].DE, testCases[i].HL, testCases[i].SP)) {
-            std::cout << "LD Test Failed" << std::endl;
+            std::cout << "Arithmetic Test " << i << " Failed" << std::endl;
             return;
+        }
+        else {
+            std::cout << "Arithmetic Test " << i << " Passed!" << std::endl;
         }
     }
 
-    std::cout << "LD Test Passed!" << std::endl;
+    std::cout << "Arithmetic Tests Passed!" << std::endl;
 
     delete cpu;
 }

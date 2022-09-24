@@ -14,15 +14,8 @@
 
 const int SCREEN_WIDTH = 160;
 const int SCREEN_HEIGHT = 144;
-const int PIXEL_ZOOM_X = 4;
-const int PIXEL_ZOOM_Y = 4;
-
-// class OneLoneCoder_Example: public olcConsoleGameEngine{
-//     public:
-//      bool OnUserCreate();
-//      bool OnUserUpdate(float );
-//     private:
-// };
+const int PIXEL_ZOOM_X = 3;
+const int PIXEL_ZOOM_Y = 3;
 
 //class Screen{
 //    public:
@@ -45,7 +38,8 @@ void initFrame() {
     for (int i = 0; i < 144; i++) {
         for (int j = 0; j < 160 * 3; j++) {
             int index = (i * 160 * 3) + j;
-            buffer[index] = (index % 2) * 128;
+            //buffer[index] = (index % 2) * 128;
+            buffer[index] = 0xFF;
         }
     }
 
@@ -68,7 +62,7 @@ void renderFrame() {
 
 void run(int argc, char** argv){
     // For testing and debugging purposes
-    //Test* test = new Test();
+    Test* test = new Test();
 
     std::string ROMPath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     Machine* machine = new Machine(ROMPath, Machine::MachineModeEnum::GAMEBOY);

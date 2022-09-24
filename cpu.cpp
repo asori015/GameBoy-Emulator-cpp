@@ -13,7 +13,7 @@ CPU::CPU(Machine* machine) {
     this->loadGameROM("");
     this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
     //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
-    this->run();
+    //this->run();
 
     //this->step();
 }
@@ -66,16 +66,18 @@ void CPU::LD_R_to_R(uint8_t op, uint8_t reg1, uint8_t reg2) {
         }
         else {
             registers_[reg1] = addressBus_[getHL()];
-            if (debug_) { printf("LD %c, (HL)\n", regNames_[reg2]); }
+            if (debug_) { printf("LD %c, (HL)\n", regNames_[reg1]); }
         }
     }
-    else if (reg2 == 0x06) {
-        addressBus_[getHL()] = registers_[reg2];
-        if (debug_) { printf("LD (HL), %c\n", regNames_[reg2]); }
-    }
     else {
-        registers_[reg1] = registers_[reg2];
-        if (debug_) { printf("LD %c, %c\n", regNames_[reg1], regNames_[reg2]); }
+        if (reg1 == 0x06) {
+            addressBus_[getHL()] = registers_[reg2];
+            if (debug_) { printf("LD (HL), %c\n", regNames_[reg2]); }
+        }
+        else {
+            registers_[reg1] = registers_[reg2];
+            if (debug_) { printf("LD %c, %c\n", regNames_[reg1], regNames_[reg2]); }
+        }
     }
 }
 
