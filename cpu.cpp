@@ -13,7 +13,7 @@ CPU::CPU(Machine* machine) {
     this->loadGameROM("");
     this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
     //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
-    //this->run();
+    this->run();
 
     //this->step();
 }
@@ -37,12 +37,12 @@ void CPU::run() {
         step();
     }
 
-    debug_ = true;
-    int x = 0; // Temporary set up, this loop should be infinite
-    while (x < 32) {
-        step();
-        x++;
-    }
+    //debug_ = true;
+    //int x = 0; // Temporary set up, this loop should be infinite
+    //while (x < 32) {
+    //    step();
+    //    x++;
+    //}
 }
 
 void CPU::step() {
@@ -724,7 +724,7 @@ void CPU::RLC(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Carry flag needs to be set
         setC(rVal >= 0b10000000);
-        addressBus_[getHL()] = (rVal << 8) + getC();
+        addressBus_[getHL()] = (rVal << 1) + getC();
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
@@ -803,7 +803,7 @@ void CPU::RL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     else {
         uint8_t rVal = registers_[reg2];
 
-        registers_[reg2] = (rVal << 8) + getC();
+        registers_[reg2] = (rVal << 1) + getC();
         // Calculate if Carry flag needs to be set
         setC(rVal >= 0b10000000);
 
