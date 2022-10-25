@@ -3,10 +3,11 @@
 #include "machine.h"
 
 class Machine;
+class CPU;
 
 class GPU {
 public:
-    GPU(Machine*, bool, bool);
+    GPU(Machine*, CPU* );
 private:
     ;
 };

@@ -10,7 +10,7 @@ void Timer::increment(int cycles) {
     for (int i = 0; i < cycles; i++) {
         if (this->pendingOverflow) {
             this->tima = this->tma;
-            this->machine->interruptsFired |= 4;
+            //this->machine->interruptsFired |= 4;
             this->pendingOverflow = false;
         }
         this->divider = (this->divider + 1) & 0xffff;

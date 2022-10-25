@@ -20,42 +20,6 @@ const int BUFFER_SIZE = (160 * 144 * 3) + 12;
 uint8_t buffer[BUFFER_SIZE];
 Machine* machine;
 
-void renderTile(Machine* machine, uint8_t index, uint8_t* buffer, int position) {
-    uint16_t VRAM_Address = (index * 16) + 0x8000;
-    for (int i = 0; i < 8; i++) {
-        uint8_t lBits = machine->cpu->addressBus_[VRAM_Address + (i * 2)];
-        uint8_t hBits = machine->cpu->addressBus_[VRAM_Address + (i * 2) + 1];
-        uint8_t mask = 0x80;
-        for (int j = 0; j < 8; j++) {
-            int bufferIndex = position + (i * 160 * 3) + (j * 3);
-            uint8_t color;
-
-            if (hBits & mask) {
-                if (lBits & mask) {
-                    color = 0x00;
-                }
-                else {
-                    color = 0x55;
-                }
-            }
-            else {
-                if (lBits & mask) {
-                    color = 0xAA;
-                }
-                else {
-                    color = 0xFF;
-                }
-            }
-
-            buffer[bufferIndex] = color;
-            buffer[bufferIndex + 1] = color;
-            buffer[bufferIndex + 2] = color;
-
-            mask = mask >> 1;
-        }
-    }
-}
-
 void initFrame() {
     glClearColor(0.07f, 0.13f, 0.07f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -78,7 +42,7 @@ void run(int argc, char** argv){
     //Test* test = new Test();
 
     std::string ROMPath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
-    machine = new Machine(ROMPath, Machine::MachineModeEnum::GAMEBOY);
+    machine = new Machine(ROMPath);
 
     // Initialize OpenGL/FreeGLUT window
     glutInit(&argc, argv);

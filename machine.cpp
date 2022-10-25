@@ -3,7 +3,7 @@
 #include <vector>
 #include "machine.h"
 
-Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath) {
+Machine::Machine(std::string ROMPath) {
     /*if (savePath == "") {
         savePath = saveExtension(ROMPath);
     }*/
@@ -28,6 +28,6 @@ Machine::Machine(std::string ROMPath, MachineModeEnum mode, std::string savePath
     //    break;
     //}
     
-    this->gpu = new GPU(this, usingColor, monochromeCompatibility);
     this->cpu = new CPU(this);
+    this->gpu = new GPU(this, cpu);
 }
