@@ -25,7 +25,7 @@ void initFrame() {
     glClear(GL_COLOR_BUFFER_BIT);
     
 
-    glPixelZoom(PIXEL_ZOOM_X, PIXEL_ZOOM_Y);
+    //glPixelZoom(PIXEL_ZOOM_X, PIXEL_ZOOM_Y);
     glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
 }
 
@@ -36,15 +36,33 @@ void renderFrame() {
     // Will get back 144 * 160 16bits per pixel
     uint8_t* frame = machine->getFrame();
 
-    int x = (index / 3) % 160;
-    int y = ((index / 3) / 160) % 144;
+    int block = 81;
 
-    glRasterPos2i(0, 0);
-    buffer[0] = (index++);
-    buffer[1] = (index++);
-    buffer[2] = (index++);
+    float x = (float)(index % 160) / 80 - 1;
+    float y = (float)((index / 160) % 144) / 72 - 1;
 
-    glDrawPixels(4, 4, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
+    glRasterPos2f(x, y);
+
+    if (index - block >= BUFFER_SIZE) {
+        index = 0;
+    }
+
+    for (int i = 0; i < block; i += 3) {
+        if (index % 2) {
+            buffer[i] = 0xFF;
+            buffer[i + 1] = 0x00;
+            buffer[i + 2] = 0x00;
+        }
+        else {
+            buffer[i] = 0x00;
+            buffer[i + 1] = 0x00;
+            buffer[i + 2] = 0xFF;
+        }
+    }
+
+    index += 1;
+
+    glDrawPixels(9, 9, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
 
     //int block = 96 * 8;
 
