@@ -4,6 +4,10 @@ GPU::GPU(Machine* machine, CPU* cpu) {
     
 }
 
+void GPU::step() {
+    ;
+}
+
 //init
 //const int VRAM = 0x8000;
 //const int TILE_MAP1 = 0x9800;

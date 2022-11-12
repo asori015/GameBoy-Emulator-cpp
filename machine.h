@@ -17,6 +17,7 @@ class Keypad;
 class Machine {
 public:
     Machine(std::string);
+    uint8_t* getFrame();
 private:
     CPU* cpu;
     GPU* gpu;

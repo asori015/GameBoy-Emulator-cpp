@@ -31,9 +31,38 @@ void initFrame() {
 
 int index = 0;
 void renderFrame() {
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT);
 
-    glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
+    // Will get back 144 * 160 16bits per pixel
+    uint8_t* frame = machine->getFrame();
+
+    int x = (index / 3) % 160;
+    int y = ((index / 3) / 160) % 144;
+
+    glRasterPos2i(0, 0);
+    buffer[0] = (index++);
+    buffer[1] = (index++);
+    buffer[2] = (index++);
+
+    glDrawPixels(4, 4, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
+
+    //int block = 96 * 8;
+
+    //if (index - block >= BUFFER_SIZE) {
+    //    index = 0;
+    //}
+
+    //for (int i = 0; i < block; i++) {
+    //    buffer[index] += (index++);
+    //}
+
+    //for (int i = 0; i < 10000; i++) {
+    //    buffer[i] += i;
+    //}
+
+    //buffer = machine->getFrame();
+    // tranlate buffer from hex vals to opengl buffer
+    //glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
     glutSwapBuffers();
 }
 

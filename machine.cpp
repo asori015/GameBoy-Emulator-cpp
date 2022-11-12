@@ -30,4 +30,14 @@ Machine::Machine(std::string ROMPath) {
     
     this->cpu = new CPU(this);
     this->gpu = new GPU(this, cpu);
+
+    for (int i = 0; i < 1; i++) {
+        cpu->step();
+        gpu->step();
+    }
+}
+
+uint8_t* Machine::getFrame() {
+    uint8_t x = 0;
+    return &x;
 }
