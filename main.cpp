@@ -16,7 +16,7 @@ const int SCREEN_HEIGHT = 144;
 const int PIXEL_ZOOM_X = 3;
 const int PIXEL_ZOOM_Y = 3;
 
-const int BUFFER_SIZE = (160 * 144 * 3) + 12;
+const int BUFFER_SIZE = (SCREEN_HEIGHT * SCREEN_WIDTH * 3) + 12;
 uint8_t buffer[BUFFER_SIZE];
 Machine* machine;
 
@@ -25,62 +25,23 @@ void initFrame() {
     glClear(GL_COLOR_BUFFER_BIT);
     
 
-    //glPixelZoom(PIXEL_ZOOM_X, PIXEL_ZOOM_Y);
-    glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
+    glPixelZoom(PIXEL_ZOOM_X, PIXEL_ZOOM_Y);
+    //glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
 }
 
 int index = 0;
 void renderFrame() {
-    //glClear(GL_COLOR_BUFFER_BIT);
-
     // Will get back 144 * 160 16bits per pixel
     uint8_t* frame = machine->getFrame();
 
-    int block = 81;
-
-    float x = (float)(index % 160) / 80 - 1;
-    float y = (float)((index / 160) % 144) / 72 - 1;
-
-    glRasterPos2f(x, y);
-
-    if (index - block >= BUFFER_SIZE) {
-        index = 0;
+    for (int i = 0; i < BUFFER_SIZE; i++) {
+        buffer[i] = index / 6;
     }
-
-    for (int i = 0; i < block; i += 3) {
-        if (index % 2) {
-            buffer[i] = 0xFF;
-            buffer[i + 1] = 0x00;
-            buffer[i + 2] = 0x00;
-        }
-        else {
-            buffer[i] = 0x00;
-            buffer[i + 1] = 0x00;
-            buffer[i + 2] = 0xFF;
-        }
-    }
-
     index += 1;
-
-    glDrawPixels(9, 9, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
-
-    //int block = 96 * 8;
-
-    //if (index - block >= BUFFER_SIZE) {
-    //    index = 0;
-    //}
-
-    //for (int i = 0; i < block; i++) {
-    //    buffer[index] += (index++);
-    //}
-
-    //for (int i = 0; i < 10000; i++) {
-    //    buffer[i] += i;
-    //}
 
     //buffer = machine->getFrame();
     // tranlate buffer from hex vals to opengl buffer
-    //glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
+    glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
     glutSwapBuffers();
 }
 
