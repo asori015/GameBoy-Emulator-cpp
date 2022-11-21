@@ -1,12 +1,13 @@
 #include "gpu.h"
 
-GPU::GPU(Machine* machine, uint8_t* addressBus) {
+GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) {
     this->addressBus_ = addressBus;
+    this->frame_ = frame;
     this->VBLANK = false;
 }
 
 void GPU::step() {
-    printf("%d ", addressBus_[0xFF40]);
+    printf("%x ", addressBus_[0xFF42]);
     //if(addressBus_[0xFF40])
     ;
 }

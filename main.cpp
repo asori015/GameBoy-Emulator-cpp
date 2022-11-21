@@ -31,7 +31,7 @@ void initFrame() {
 int index = 0;
 void renderFrame() {
     // Will get back 144 * 160 16bits per pixel
-    uint8_t* frame = machine->getFrame();
+    uint16_t* frame = machine->getFrame();
 
     for (int i = 0; i < BUFFER_SIZE; i++) {
         buffer[i] = index / 6;
