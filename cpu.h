@@ -24,6 +24,7 @@ public:
     uint16_t getDE();
     uint16_t getHL();
     uint16_t getSP();
+    uint16_t getPC();
 
     bool getC();
     bool getH();
@@ -98,10 +99,11 @@ private:
     Machine* machine_;
     uint8_t* addressBus_;
     uint8_t* registers_ = new uint8_t[8]{ 0 };
-    static std::map<uint8_t, FunctionPointer> instructionMethods1_;
-    static std::map<uint8_t, FunctionPointer> instructionMethods2_;
+    static std::map<uint8_t, std::pair<FunctionPointer, int>> instructionMethods1_;
+    static std::map<uint8_t, std::pair<FunctionPointer, int>> instructionMethods2_;
     uint16_t PC_;
     uint16_t SP_;
+    int clock_;
     bool cbPrefx_ = false;
     bool isHalted_ = false;
     // Only for debug print statements

@@ -33,4 +33,7 @@ private:
     const uint16_t WX = 0xFF4B; // Window Y-Coordinate
 
     const uint16_t OAM = 0xFE00; // Object Attribute Memory
+
+    int state_;
+    int clock_;
 };

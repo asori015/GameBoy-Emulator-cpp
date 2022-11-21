@@ -4,12 +4,35 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) {
     this->addressBus_ = addressBus;
     this->frame_ = frame;
     this->VBLANK = false;
+    this->state_ = 2;
+    this->clock_ = 0;
 }
 
 void GPU::step() {
-    printf("%x ", addressBus_[0xFF42]);
-    //if(addressBus_[0xFF40])
-    ;
+    // if LCD is on
+    if (addressBus_[LCDC] & 0x80) {
+        if (clock_ >= 65664) {
+            // Mode 1, V-BLANK
+        }
+        else if(clock_ % 456 < 80){
+            // Mode 2, OAM Scan
+        }
+        else if (clock_ % 456 < 200) {
+            // Mode 3, Drawing Pixels
+        }
+        else {
+            // Mode 0, H-Blank
+        }
+
+        addressBus_[LY] = clock_ / 456;
+        if (clock_ == 70224) {
+            clock_ = 0;
+            //printf("1 ");
+        }
+        else {
+            clock_ += 1;
+        }
+    }
 }
 
 bool GPU::getVBLANK() {

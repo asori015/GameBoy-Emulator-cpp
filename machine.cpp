@@ -36,9 +36,17 @@ Machine::Machine(std::string ROMPath) {
 }
 
 uint16_t* Machine::getFrame() {
+    uint16_t pc = 0;
     while (!gpu->getVBLANK()) {
         cpu->step();
         gpu->step();
+
+        if (pc != cpu->getPC()) {
+            printf("0x%x ", pc);
+            pc = cpu->getPC();
+        }
+        //printf("0x%x ", cpu->getPC());
+        //printf("0x%x ", addressBus_[0xFF44]);
     }
 
     return frame_;
