@@ -21,4 +21,6 @@ public:
 private:
     CPU* cpu;
     GPU* gpu;
+
+    uint8_t* addressBus_;
 };

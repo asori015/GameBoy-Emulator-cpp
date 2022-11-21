@@ -1,11 +1,18 @@
 #include "gpu.h"
 
-GPU::GPU(Machine* machine, CPU* cpu) {
-    
+GPU::GPU(Machine* machine, uint8_t* addressBus) {
+    this->addressBus_ = addressBus;
+    this->VBLANK = false;
 }
 
 void GPU::step() {
+    printf("%d ", addressBus_[0xFF40]);
+    //if(addressBus_[0xFF40])
     ;
+}
+
+bool GPU::getVBLANK() {
+    return VBLANK;
 }
 
 //init

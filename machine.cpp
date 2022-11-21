@@ -27,17 +27,19 @@ Machine::Machine(std::string ROMPath) {
     //    //throw Machine::ROMException("No valid machine mode specified");
     //    break;
     //}
-    
-    this->cpu = new CPU(this);
-    this->gpu = new GPU(this, cpu);
 
-    for (int i = 0; i < 1; i++) {
-        cpu->step();
-        gpu->step();
-    }
+    addressBus_ = new uint8_t[0xFFFF]{ 0 };
+    
+    this->cpu = new CPU(this, addressBus_);
+    this->gpu = new GPU(this, addressBus_);
 }
 
 uint8_t* Machine::getFrame() {
+    while (!gpu->getVBLANK()) {
+        cpu->step();
+        gpu->step();
+    }
+
     uint8_t x = 0;
     return &x;
 }

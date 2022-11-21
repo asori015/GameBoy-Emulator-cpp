@@ -92,7 +92,8 @@ void Test::testLD() {
         {0xFF20, 0x1122, 0x1122, 0xC07E, 0xBFFF, 5}
     };
 
-    this->cpu = new CPU(0);
+    uint8_t* addressBus = new uint8_t[0xFFFF]{ 0 };
+    this->cpu = new CPU(0, addressBus);
     cpu->loadBIOS(LD_snippet, ARR_SIZE, 0);
 
     for (int i = 0; i < NUM_TESTS; i++) {
@@ -200,7 +201,8 @@ void Test::testArithmetic() {
         {0xEB70, 0x2A00, 0x0000, 0x0000, 0xFFF8, 3},
     };
 
-    this->cpu = new CPU(0);
+    uint8_t* addressBus = new uint8_t[0xFFFF]{ 0 };
+    this->cpu = new CPU(0, addressBus);
     cpu->loadBIOS(ADD_snippet, ARR_SIZE, 0);
 
     for (int i = 0; i < NUM_TESTS; i++) {

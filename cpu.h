@@ -11,7 +11,7 @@ class CPU {
 public:
     typedef void (CPU::* FunctionPointer)(uint8_t, uint8_t, uint8_t);
 
-    CPU(Machine*);
+    CPU(Machine*, uint8_t*);
     void loadBIOS(const uint8_t*, int, uint16_t);
     void loadGameROM(std::string);
     void step();
@@ -30,7 +30,6 @@ public:
     bool getN();
     bool getZ();
 
-    uint8_t* addressBus_ = new uint8_t[0xFFFF]{ 0 };
 private:
     enum Register
     {
@@ -97,6 +96,7 @@ private:
     void setZ(bool);
 
     Machine* machine_;
+    uint8_t* addressBus_;
     uint8_t* registers_ = new uint8_t[8]{ 0 };
     static std::map<uint8_t, FunctionPointer> instructionMethods1_;
     static std::map<uint8_t, FunctionPointer> instructionMethods2_;

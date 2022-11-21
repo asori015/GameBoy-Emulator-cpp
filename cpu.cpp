@@ -5,11 +5,12 @@
 
 //typedef void (CPU::* functionPointer)(uint8_t );
 
-CPU::CPU(Machine* machine) {
+CPU::CPU(Machine* machine, uint8_t* addressBus) {
     this->machine_ = machine;
     this->PC_ = 0;
     this->SP_ = 0;
     this->debug_ = true;
+    this->addressBus_ = addressBus;
     this->loadGameROM("");
     this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
     //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);

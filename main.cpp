@@ -26,7 +26,6 @@ void initFrame() {
     
 
     glPixelZoom(PIXEL_ZOOM_X, PIXEL_ZOOM_Y);
-    //glDrawPixels(160, 144, GL_RGB, GL_UNSIGNED_BYTE, &buffer);
 }
 
 int index = 0;
