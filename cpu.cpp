@@ -10,12 +10,12 @@ CPU::CPU(Machine* machine, uint8_t* addressBus) {
     this->PC_ = 0;
     this->SP_ = 0;
     this->clock_ = 0;
-    this->debug_ = true;
+    //this->debug_ = true;
     this->addressBus_ = addressBus;
     this->loadGameROM("");
     this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
     //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
-    this->run();
+    //this->run();
 
     //this->step();
 }
@@ -62,6 +62,7 @@ void CPU::execute(uint8_t instruction) {
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
+    //CPU::FunctionPointer x[3] = {&CPU::ADD};
     (this->*instructionMethods1_[instruction].first)(opcode, register1, register2);
     clock_ = instructionMethods1_[instruction].second - 1;
     PC_ += 1;
@@ -397,7 +398,7 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
         printf("ADC ");
     }
     else {
-        printf("ADD ");
+        //printf("ADD ");
     }
 
     // Get the value being used for the calculation with Register A
@@ -436,10 +437,10 @@ void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
     // Check if carry bit will be used
     if (reg1 == 0x03) {
         carry = getC();
-        printf("SBC ");
+        // printf("SBC ");
     }
     else {
-        printf("SUB ");
+        // printf("SUB ");
     }
 
     // Get the value being used for the calculation with Register A
@@ -1232,36 +1233,36 @@ void CPU::setZ(bool val) {
 
 std::map<uint8_t, std::pair<CPU::FunctionPointer, int>> CPU::instructionMethods1_ = { 
     {0x00, {&CPU::nop, 4}},
-    {0X01, {&CPU::LD_16_Bit, 4}},
-    {0X02, {&CPU::LD_8_Bit, 4}},
-    {0X03, {&CPU::INC_16_BIT, 4}},
+    {0X01, {&CPU::LD_16_Bit, 16}},
+    {0X02, {&CPU::LD_8_Bit, 8}},
+    {0X03, {&CPU::INC_16_BIT, 8}},
     {0X04, {&CPU::INC, 4}},
     {0X05, {&CPU::DEC, 4}},
-    {0X06, {&CPU::LD_8_Bit, 4}},
+    {0X06, {&CPU::LD_8_Bit, 8}},
     {0X07, {&CPU::RLC, 4}},
-    {0X08, {&CPU::LD_16_Bit, 4}},
-    {0X09, {&CPU::ADD_16_BIT, 4}},
-    {0X0A, {&CPU::LD_8_Bit, 4}},
-    {0X0B, {&CPU::DEC_16_BIT, 4}},
+    {0X08, {&CPU::LD_16_Bit, 20}},
+    {0X09, {&CPU::ADD_16_BIT, 8}},
+    {0X0A, {&CPU::LD_8_Bit, 8}},
+    {0X0B, {&CPU::DEC_16_BIT, 8}},
     {0X0C, {&CPU::INC, 4}},
     {0X0D, {&CPU::DEC, 4}},
-    {0X0E, {&CPU::LD_8_Bit, 4}},
+    {0X0E, {&CPU::LD_8_Bit, 8}},
     {0X0F, {&CPU::RRC, 4}},
     {0X10, {&CPU::nop, 4}},
-    {0X11, {&CPU::LD_16_Bit, 4}},
-    {0X12, {&CPU::LD_8_Bit, 4}},
-    {0X13, {&CPU::INC_16_BIT, 4}},
+    {0X11, {&CPU::LD_16_Bit, 12}},
+    {0X12, {&CPU::LD_8_Bit, 8}},
+    {0X13, {&CPU::INC_16_BIT, 8}},
     {0X14, {&CPU::INC, 4}},
     {0X15, {&CPU::DEC, 4}},
-    {0X16, {&CPU::LD_8_Bit, 4}},
+    {0X16, {&CPU::LD_8_Bit, 8}},
     {0X17, {&CPU::RL, 4}},
-    {0X18, {&CPU::JR, 4}},
-    {0X19, {&CPU::ADD_16_BIT, 4}},
-    {0X1A, {&CPU::LD_8_Bit, 4}},
-    {0X1B, {&CPU::DEC_16_BIT, 4}},
+    {0X18, {&CPU::JR, 12}},
+    {0X19, {&CPU::ADD_16_BIT, 8}},
+    {0X1A, {&CPU::LD_8_Bit, 8}},
+    {0X1B, {&CPU::DEC_16_BIT, 8}},
     {0X1C, {&CPU::INC, 4}},
     {0X1D, {&CPU::DEC, 4}},
-    {0X1E, {&CPU::LD_8_Bit, 4}},
+    {0X1E, {&CPU::LD_8_Bit, 8}},
     {0X1F, {&CPU::RR, 4}},
     {0X20, {&CPU::JR, 4}},
     {0X21, {&CPU::LD_16_Bit, 4}},
@@ -1485,7 +1486,7 @@ std::map<uint8_t, std::pair<CPU::FunctionPointer, int>> CPU::instructionMethods1
     {0XFB, {&CPU::nop, 4}},
     {0XFC, {&CPU::nop, 4}},
     {0XFD, {&CPU::nop, 4}},
-    {0XFE, {&CPU::CP, 4}},
+    {0XFE, {&CPU::CP, 8}},
     {0XFF, {&CPU::nop, 4}},
 };
 

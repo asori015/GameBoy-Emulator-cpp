@@ -4,35 +4,68 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) {
     this->addressBus_ = addressBus;
     this->frame_ = frame;
     this->VBLANK = false;
-    this->state_ = 2;
+    this->state_ = State::Mode2;
     this->clock_ = 0;
 }
 
 void GPU::step() {
     // if LCD is on
     if (addressBus_[LCDC] & 0x80) {
-        if (clock_ >= 65664) {
-            // Mode 1, V-BLANK
-        }
-        else if(clock_ % 456 < 80){
-            // Mode 2, OAM Scan
-        }
-        else if (clock_ % 456 < 200) {
-            // Mode 3, Drawing Pixels
-        }
-        else {
-            // Mode 0, H-Blank
+        switch (state_)
+        {
+        case State::Mode0: // H-Blank
+            if (clock_ >= 456) {
+                addressBus_[LY] = (addressBus_[LY] + 1) % 154;
+                if (addressBus_[LY] >= 144) {
+                    state_ = State::Mode1;
+                }
+                else {
+                    state_ = State::Mode2;
+                }
+                clock_ = -1;
+            }
+            break;
+        case State::Mode1: // V-Blank
+            if (clock_ >= 456) {
+                addressBus_[LY] = (addressBus_[LY] + 1) % 154;
+                //printf("%d\n", addressBus_[LY]);
+                if (addressBus_[LY] == 0) {
+                    state_ = State::Mode2;
+                    printf("1 ");
+                }
+                clock_ = -1;
+            }
+            break;
+        case State::Mode2: // OAM Scan
+            if (clock_ >= 80) {
+                state_ = State::Mode3;
+            }
+            break;
+        case State::Mode3: // Drawing Pixels
+            if (clock_ >= 172) {
+                state_ = State::Mode0;
+            }
+            break;
+        default:
+            break;
         }
 
-        addressBus_[LY] = clock_ / 456;
-        if (clock_ == 70224) {
-            clock_ = 0;
-            //printf("1 ");
-        }
-        else {
-            clock_ += 1;
-        }
+        //printf("%d", state_);
+
+        clock_++;
     }
+}
+
+void mode3() {
+    // STEP 1: Get Tile
+    // if lcdc.3 = 1 and cur x outside "window"
+    //    use tilemap2
+    // else if lcdc.6 = 1 and cur x inside "window"
+    //    use tilemap2
+    // else
+    //    use tilemap1
+    //
+    // 
 }
 
 bool GPU::getVBLANK() {
