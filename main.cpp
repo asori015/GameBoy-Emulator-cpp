@@ -35,9 +35,12 @@ void renderFrame() {
 
     for (int i = 0; i < 144; i++) {
         for (int j = 0; j < 160; j++) {
-            buffer[(i * 160) + (j * 3) + 0] = frame[(i * 160) + j];
-            buffer[(i * 160) + (j * 3) + 1] = frame[(i * 160) + j];
-            buffer[(i * 160) + (j * 3) + 2] = frame[(i * 160) + j];
+            buffer[(i * 160 * 3) + (j * 3) + 0] = frame[(i * 160) + j];
+            buffer[(i * 160 * 3) + (j * 3) + 1] = frame[(i * 160) + j];
+            buffer[(i * 160 * 3) + (j * 3) + 2] = frame[(i * 160) + j];
+            //buffer[(i * 160) + (j * 3) + 0] = frame[(i * 160) + j];
+            //buffer[(i * 160) + (j * 3) + 1] = frame[(i * 160) + j];
+            //buffer[(i * 160) + (j * 3) + 2] = frame[(i * 160) + j];
         }
     }
 
