@@ -18,6 +18,11 @@ void GPU::step() {
                 addressBus_[LY] = (addressBus_[LY] + 1) % 154;
                 if (addressBus_[LY] >= 144) {
                     state_ = State::Mode1;
+                    // Transition into V-BLANK
+                    // For now, not emulating cycle per cycle GPU
+                    // Render the *entire* frame in one go
+                    // Temporary soluton
+                    renderFrame();
                 }
                 else {
                     state_ = State::Mode2;
@@ -56,7 +61,7 @@ void GPU::step() {
     }
 }
 
-void mode3() {
+void GPU::mode3() {
     // STEP 1: Get Tile
     // if lcdc.3 = 1 and cur x outside "window"
     //    use tilemap2
@@ -68,8 +73,21 @@ void mode3() {
     // 
 }
 
+// This function redundant and might be removed
 bool GPU::getVBLANK() {
     return VBLANK;
+}
+
+// This is a temporary function that renders an entire LCD frame
+void GPU::renderFrame() {
+    for (int i = 0; i < 18; i++) {
+        for (int j = 0; j < 20; j++) {
+            uint8_t tileIndex = machine->cpu->addressBus_[TILE_MAP1 + (i * 32) + j];
+            renderTile(machine, tileIndex, buffer, (i * 160 * 8 * 3) + (j * 8 * 3));
+        }
+    }
+
+    return;
 }
 
 //init
@@ -91,38 +109,38 @@ bool GPU::getVBLANK() {
 //    }
 //}
 
-//void renderTile(Machine* machine, uint8_t index, uint8_t* buffer, int position) {
-//    uint16_t VRAM_Address = (index * 16) + 0x8000;
-//    for (int i = 0; i < 8; i++) {
-//        uint8_t lBits = machine->cpu->addressBus_[VRAM_Address + (i * 2)];
-//        uint8_t hBits = machine->cpu->addressBus_[VRAM_Address + (i * 2) + 1];
-//        uint8_t mask = 0x80;
-//        for (int j = 0; j < 8; j++) {
-//            int bufferIndex = position + (i * 160 * 3) + (j * 3);
-//            uint8_t color;
-//
-//            if (hBits & mask) {
-//                if (lBits & mask) {
-//                    color = 0x00;
-//                }
-//                else {
-//                    color = 0x55;
-//                }
-//            }
-//            else {
-//                if (lBits & mask) {
-//                    color = 0xAA;
-//                }
-//                else {
-//                    color = 0xFF;
-//                }
-//            }
-//
-//            buffer[bufferIndex] = color;
-//            buffer[bufferIndex + 1] = color;
-//            buffer[bufferIndex + 2] = color;
-//
-//            mask = mask >> 1;
-//        }
-//    }
-//}
+void GPU::renderTile(Machine* machine, uint8_t index, uint8_t* buffer, int position) {
+    uint16_t VRAM_Address = (index * 16) + 0x8000;
+    for (int i = 0; i < 8; i++) {
+        uint8_t lBits = machine->cpu->addressBus_[VRAM_Address + (i * 2)];
+        uint8_t hBits = machine->cpu->addressBus_[VRAM_Address + (i * 2) + 1];
+        uint8_t mask = 0x80;
+        for (int j = 0; j < 8; j++) {
+            int bufferIndex = position + (i * 160 * 3) + (j * 3);
+            uint8_t color;
+
+            if (hBits & mask) {
+                if (lBits & mask) {
+                    color = 0x00;
+                }
+                else {
+                    color = 0x55;
+                }
+            }
+            else {
+                if (lBits & mask) {
+                    color = 0xAA;
+                }
+                else {
+                    color = 0xFF;
+                }
+            }
+
+            buffer[bufferIndex] = color;
+            buffer[bufferIndex + 1] = color;
+            buffer[bufferIndex + 2] = color;
+
+            mask = mask >> 1;
+        }
+    }
+}

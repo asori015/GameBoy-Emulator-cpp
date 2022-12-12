@@ -24,4 +24,5 @@ private:
 
     uint8_t* addressBus_;
     uint16_t* frame_;
+    bool inVBLANK_;
 };

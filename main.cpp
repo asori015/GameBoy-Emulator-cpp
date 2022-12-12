@@ -33,10 +33,10 @@ void renderFrame() {
     // Will get back 144 * 160 16bits per pixel
     uint16_t* frame = machine->getFrame();
 
-    for (int i = 0; i < BUFFER_SIZE; i++) {
+    /*for (int i = 0; i < BUFFER_SIZE; i++) {
         buffer[i] = index / 6;
     }
-    index += 1;
+    index += 1;*/
 
     //buffer = machine->getFrame();
     // tranlate buffer from hex vals to opengl buffer

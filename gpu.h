@@ -11,6 +11,10 @@ public:
     void step();
     bool getVBLANK();
 private:
+    void mode3();
+    void renderFrame();
+    void renderTile();
+
     enum State{Mode0, Mode1, Mode2, Mode3};
 
     uint8_t* addressBus_;

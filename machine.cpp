@@ -28,27 +28,29 @@ Machine::Machine(std::string ROMPath) {
     //    break;
     //}
 
-    addressBus_ = new uint8_t[0xFFFF]{ 0 };
-    frame_ = new uint16_t[1]{ 0 };
+    this->addressBus_ = new uint8_t[0xFFFF]{ 0 };
+    this->frame_ = new uint16_t[160 * 144]{ 0 };
     
     this->cpu = new CPU(this, addressBus_);
     this->gpu = new GPU(this, addressBus_, frame_);
+    this->inVBLANK_ = false;
 }
 
 uint16_t* Machine::getFrame() {
-    uint16_t pc = 0;
-    //addressBus_[0xFF40] = 0x91;
-    while (!gpu->getVBLANK()) {
+    while (addressBus_[0xFF44] >= 0x90 && inVBLANK_) {
         cpu->step();
         gpu->step();
-
-        //if (pc != cpu->getPC()) {
-        //     printf("0x%x ", pc);
-        //     pc = cpu->getPC();
-        //}
-        //printf("0x%x ", cpu->getPC());
-        //printf("0x%x ", addressBus_[0xFF44]);
     }
+
+    inVBLANK_ = false;
+
+    //addressBus_[0xFF40] = 0x91;
+    while (addressBus_[0xFF44] < 0x90 && !inVBLANK_) {
+        cpu->step();
+        gpu->step();
+    }
+
+    inVBLANK_ = true;
 
     return frame_;
 }
