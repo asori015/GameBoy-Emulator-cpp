@@ -13,7 +13,7 @@ public:
 private:
     void mode3();
     void renderFrame();
-    void renderTile();
+    void renderTile(uint8_t , uint16_t* , int );
 
     enum State{Mode0, Mode1, Mode2, Mode3};
 
