@@ -15,6 +15,10 @@ const int SCREEN_WIDTH = 160;
 const int SCREEN_HEIGHT = 144;
 const int PIXEL_ZOOM_X = 3;
 const int PIXEL_ZOOM_Y = 3;
+const uint8_t colorMap[32] = { 0X00, 0X08, 0X10, 0X18, 0X20, 0X29, 0X31, 0X39,
+                               0X41, 0X4A, 0X52, 0X5A, 0X62, 0X6A, 0X73, 0X7B,
+                               0X83, 0X8B, 0X94, 0X9C, 0XA4, 0XAC, 0XB4, 0XBD,
+                               0XC5, 0XCD, 0XD5, 0XDE, 0XE6, 0XEE, 0XF6, 0XFF};
 
 const int BUFFER_SIZE = (SCREEN_HEIGHT * SCREEN_WIDTH * 3) + 12;
 uint8_t buffer[BUFFER_SIZE];
@@ -23,7 +27,6 @@ Machine* machine;
 void initFrame() {
     glClearColor(0.07f, 0.13f, 0.07f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    
 
     glPixelZoom(PIXEL_ZOOM_X, PIXEL_ZOOM_Y);
 }
@@ -34,20 +37,13 @@ void renderFrame() {
     uint16_t* frame = machine->getFrame();
 
     for (int i = 0; i < 144; i++) {
+        int position = ((143 - i) * 160 * 3);
         for (int j = 0; j < 160; j++) {
-            buffer[(i * 160 * 3) + (j * 3) + 0] = frame[(i * 160) + j];
-            buffer[(i * 160 * 3) + (j * 3) + 1] = frame[(i * 160) + j];
-            buffer[(i * 160 * 3) + (j * 3) + 2] = frame[(i * 160) + j];
-            //buffer[(i * 160) + (j * 3) + 0] = frame[(i * 160) + j];
-            //buffer[(i * 160) + (j * 3) + 1] = frame[(i * 160) + j];
-            //buffer[(i * 160) + (j * 3) + 2] = frame[(i * 160) + j];
+            buffer[position++] = colorMap[(frame[(i * 160) + j] & 0x001F)];
+            buffer[position++] = colorMap[(frame[(i * 160) + j] & 0x03E0) >> 5];
+            buffer[position++] = colorMap[(frame[(i * 160) + j] & 0x7C00) >> 10];
         }
     }
-
-    /*for (int i = 0; i < BUFFER_SIZE; i++) {
-        buffer[i] = index / 6;
-    }
-    index += 1;*/
 
     //buffer = machine->getFrame();
     // tranlate buffer from hex vals to opengl buffer

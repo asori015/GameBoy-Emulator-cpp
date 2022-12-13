@@ -105,12 +105,12 @@ void GPU::renderTile(uint8_t index, uint16_t* frame_, int position) {
                     color = 0x0000;
                 }
                 else {
-                    color = 0x5555;
+                    color = 0x294A;
                 }
             }
             else {
                 if (lBits & mask) {
-                    color = 0xAAAA;
+                    color = 0x56B5;
                 }
                 else {
                     color = 0xFFFF;
