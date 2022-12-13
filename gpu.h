@@ -14,6 +14,8 @@ private:
     void mode3();
     void renderFrame();
     void renderTile(uint8_t , uint16_t* , int );
+    void renderTile(int, int, uint8_t, uint8_t, uint8_t, uint8_t);
+    void renderLine(uint8_t, uint8_t, uint8_t, uint8_t);
 
     enum State{Mode0, Mode1, Mode2, Mode3};
 
@@ -32,8 +34,8 @@ private:
     // LCD Registers
     const uint16_t LCDC = 0xFF40; // LCD Control Register
     const uint16_t STAT = 0xFF41; // LCD Status Flag
-    const uint16_t SCY = 0xFF42; // LCD Scroll Y Register
-    const uint16_t SCX = 0xFF43; // LCD Scroll X Register
+    const uint8_t* SCY; // LCD Scroll Y Register
+    const uint8_t* SCX; // LCD Scroll X Register
     const uint16_t LY = 0xFF44; // LCDC Y-coordinate
     const uint16_t LYC = 0xFF45; // LY Compare Register
     const uint16_t DMA = 0xFF46; // DMA Transfer and Starting Address

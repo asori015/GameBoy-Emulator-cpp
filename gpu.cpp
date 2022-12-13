@@ -6,6 +6,9 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) {
     this->VBLANK = false;
     this->state_ = State::Mode2;
     this->clock_ = 0;
+
+    this->SCY = &addressBus[0xFF42];
+    this->SCX = &addressBus[0xFF43];
 }
 
 void GPU::step() {
@@ -23,6 +26,7 @@ void GPU::step() {
                     // Render the *entire* frame in one go
                     // Temporary soluton
                     renderFrame();
+                    //printf("0x%x 0x%x\n", *SCX, *SCY);
                 }
                 else {
                     state_ = State::Mode2;
@@ -80,14 +84,80 @@ bool GPU::getVBLANK() {
 
 // This is a temporary function that renders an entire LCD frame
 void GPU::renderFrame() {
-    for (int i = 0; i < 18; i++) {
-        for (int j = 0; j < 20; j++) {
-            uint8_t tileIndex = addressBus_[TILE_MAP1 + (i * 32) + j];
-            renderTile(tileIndex, frame_, (i * 160 * 8) + (j * 8));
+    // This is a TEMPORARY solution and there
+    // is room for optimization and refactoring
+    for (int i = 0; i < 144; i++) {
+        for (int j = 0; j < 160; j++) {
+            int x = (*SCX + j) % 255;
+            int y = (*SCY + i) % 255;
+            int tileIndex = (y / 8) * 32 + (x / 8);
+            int VRAM_Pointer = VRAM + (addressBus_[TILE_MAP1 + tileIndex] * 16);
+
+            uint8_t lBits = addressBus_[VRAM_Pointer + ((y % 8) * 2)];
+            uint8_t hBits = addressBus_[VRAM_Pointer + ((y % 8) * 2) + 1];
+            uint8_t mask = 0x80 >> (x % 8);
+            uint16_t color;
+
+            if (hBits & mask) {
+                if (lBits & mask) {
+                    color = 0x0000;
+                }
+                else {
+                    color = 0x294A;
+                }
+            }
+            else {
+                if (lBits & mask) {
+                    color = 0x56B5;
+                }
+                else {
+                    color = 0xFFFF;
+                }
+            }
+
+            frame_[(i * 160) + j] = color;
         }
     }
 
-    return;
+}
+
+void GPU::renderTile(int tileIndex, int frameIndex, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2) {
+    uint16_t VRAM_Pointer = (tileIndex * 16) + VRAM;
+    for (int i = y1; i < y2; i++) {
+        uint8_t lBits = addressBus_[VRAM_Pointer + (i * 2)];
+        uint8_t hBits = addressBus_[VRAM_Pointer + (i * 2) + 1];
+        uint8_t mask = 0x80;
+
+        for (int j = x1; j < x2; j++) {
+            //int frameIndex = frameIndex + (i * 160) + j;
+            uint16_t color;
+
+            if (hBits & mask) {
+                if (lBits & mask) {
+                    color = 0x0000;
+                }
+                else {
+                    color = 0x294A;
+                }
+            }
+            else {
+                if (lBits & mask) {
+                    color = 0x56B5;
+                }
+                else {
+                    color = 0xFFFF;
+                }
+            }
+
+            //frame_[frameIndex] = color;
+
+            mask = mask >> 1;
+        }
+    }
+}
+
+void GPU::renderLine(uint8_t index, uint8_t y, uint8_t x1, uint8_t x2) {
+    ;
 }
 
 void GPU::renderTile(uint8_t index, uint16_t* frame_, int position) {
@@ -123,23 +193,3 @@ void GPU::renderTile(uint8_t index, uint16_t* frame_, int position) {
         }
     }
 }
-
-//init
-//const int VRAM = 0x8000;
-//const int TILE_MAP1 = 0x9800;
-//const int TILE_MAP1_END = 0x9BFF;
-//for (int i = 0; i < 18; i++) {
-//    for (int j = 0; j < 20; j++) {
-//        uint8_t tileIndex = machine->cpu->addressBus_[TILE_MAP1 + (i * 32) + j];
-//        renderTile(machine, tileIndex, buffer, (i * 160 * 8 * 3) + (j * 8 * 3));
-//    }
-//}
-//
-//for (int i = 0; i < 144 / 2; i++) {
-//    for (int j = 0; j < 160 * 3; j++) {
-//        uint8_t temp = buffer[(i * 160 * 3) + j];
-//        buffer[(i * 160 * 3) + j] = buffer[((144 - i - 1) * 160 * 3) + j];
-//        buffer[((144 - i - 1) * 160 * 3) + j] = temp;
-//    }
-//}
-

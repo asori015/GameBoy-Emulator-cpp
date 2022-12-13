@@ -33,6 +33,7 @@ void CPU::loadGameROM(std::string filePath) {
 }
 
 // This function is temporary, step function should be called by the Machine class
+// Function Deprecated...
 void CPU::run() {
     debug_ = false;
     while (this->PC_ != 0x0068) {
@@ -51,7 +52,6 @@ void CPU::step() {
     if (clock_ == 0) {
         uint8_t instruction = addressBus_[PC_];
         execute(instruction);
-        if (debug_) { printRegs(); }
     }
     else {
         clock_ -= 1;
@@ -59,12 +59,21 @@ void CPU::step() {
 }
 
 void CPU::execute(uint8_t instruction) {
+    if (PC_ == 0x0100) {
+        debug_ = true;
+    }
+
+    if (instruction == 0x0100) {
+        loadGameROM("");
+    }
+
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
     //CPU::FunctionPointer x[3] = {&CPU::ADD};
     (this->*instructionMethods1_[instruction].first)(opcode, register1, register2);
     clock_ = instructionMethods1_[instruction].second - 1;
+    if (debug_) { printRegs(); }
     PC_ += 1;
 }
 
