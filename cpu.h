@@ -99,8 +99,9 @@ private:
     Machine* machine_;
     uint8_t* addressBus_;
     uint8_t* registers_ = new uint8_t[8]{ 0 };
-    static std::map<uint8_t, std::pair<FunctionPointer, int>> instructionMethods1_;
-    static std::map<uint8_t, std::pair<FunctionPointer, int>> instructionMethods2_;
+    static const FunctionPointer instructionMethods1_[];
+    static const FunctionPointer instructionMethods2_[];
+
     uint16_t PC_;
     uint16_t SP_;
     int clock_;
