@@ -27,9 +27,12 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 }
 
 void CPU::loadGameROM(std::string filePath) {
-    filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
+    //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
+    //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
+    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     std::ifstream gameFile(filePath, std::ios::binary);
     gameFile.read((char*)(addressBus_), 0x7FFF);
+    gameFile.close();
 }
 
 // This function is temporary, step function should be called by the Machine class
@@ -59,18 +62,22 @@ void CPU::step() {
 }
 
 void CPU::execute(uint8_t instruction) {
-    /*if (PC_ == 0x0100) {
+    /*if (PC_ == 0x1F72) {
         debug_ = true;
     }*/
 
-    if (instruction == 0x0100) {
+    /*if (PC_ == 0x1F72) {
+        debug_ = true;
+    }*/
+
+    if (PC_ == 0x0100) {
         loadGameROM("");
+        //debug_ = true;
     }
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
-    //CPU::FunctionPointer x[3] = {&CPU::ADD};
     (this->*instructionMethods1_[instruction])(opcode, register1, register2);
     clock_ = 4;//instructionMethods1_[instruction].second - 1;
     if (debug_) { printRegs(); }
@@ -703,19 +710,19 @@ void CPU::INC_16_BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 void CPU::DEC_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
     switch (reg1)
     {
-    case 0x00:
+    case 0x01:
         setBC(getBC() - 1);
         if (debug_) { printf("DEC BC\n"); }
         break;
-    case 0x02:
+    case 0x03:
         setDE(getDE() - 1);
         if (debug_) { printf("DEC DE\n"); }
         break;
-    case 0x04:
+    case 0x05:
         setHL(getHL() - 1);
         if (debug_) { printf("DEC HL\n"); }
         break;
-    case 0x06:
+    case 0x07:
         SP_ -= 1;
         if (debug_) { printf("DEC SP\n"); }
         break;
