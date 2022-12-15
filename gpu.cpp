@@ -1,6 +1,11 @@
 #include "gpu.h"
 
 GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) : 
+    VRAM_1(&addressBus[0x8000]),
+    VRAM_2(&addressBus[0x9000]),
+    TILE_MAP1(&addressBus[0x9800]),
+    TILE_MAP2(&addressBus[0x9C00]),
+    OAM(&addressBus[0xFE00]),
     LCDC(&addressBus[0xFF40]),
     STAT(&addressBus[0xFF41]),
     SCY(&addressBus[0xFF42]),
@@ -9,7 +14,6 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) :
 {
     this->addressBus_ = addressBus;
     this->frame_ = frame;
-    this->VBLANK = false;
     this->state_ = State::Mode2;
     this->clock_ = 0;
 }
@@ -62,14 +66,39 @@ void GPU::step() {
 }
 
 void GPU::renderLine() {
-    for (int j = 0; j < 160; j++) {
-        int x = (*SCX + j) % 255;
+    clearLine();
+    if (*LCDC & 0x01) {
+        renderBGLine();
+    }
+}
+
+void GPU::renderBGLine() {
+    for (int i = 0; i < 160; i++) {
+        int x = (*SCX + i) % 255;
         int y = (*SCY + *LY) % 255;
         int tileIndex = (y / 8) * 32 + (x / 8);
-        int VRAM_Pointer = VRAM + (addressBus_[TILE_MAP1 + tileIndex] * 16);
+        const uint8_t* VRAM_Pointer;
 
-        uint8_t lBits = addressBus_[VRAM_Pointer + ((y % 8) * 2)];
-        uint8_t hBits = addressBus_[VRAM_Pointer + ((y % 8) * 2) + 1];
+        if (*LCDC & 0x10) {
+            if (*LCDC & 0x08) {
+                VRAM_Pointer = VRAM_1 + (*(TILE_MAP2 + tileIndex) * 16);
+            }
+            else {
+                VRAM_Pointer = VRAM_1 + (*(TILE_MAP1 + tileIndex) * 16);
+            }
+        }
+        else {
+            if (*LCDC & 0x08) {
+                VRAM_Pointer = VRAM_2 + ((int8_t)(*(TILE_MAP2 + tileIndex)) * 16);
+            }
+            else {
+                VRAM_Pointer = VRAM_2 + ((int8_t)(*(TILE_MAP1 + tileIndex)) * 16);
+            }
+        }
+        
+
+        uint8_t lBits = *(VRAM_Pointer + ((y % 8) * 2));
+        uint8_t hBits = *(VRAM_Pointer + ((y % 8) * 2) + 1);
         uint8_t mask = 0x80 >> (x % 8);
         uint16_t color;
 
@@ -90,6 +119,12 @@ void GPU::renderLine() {
             }
         }
 
-        frame_[(*LY * 160) + j] = color;
+        frame_[(*LY * 160) + i] = color;
+    }
+}
+
+void GPU::clearLine() {
+    for (int i = 0; i < 160; i++) {
+        frame_[(*LY * 160) + i] = 0xFFFF;
     }
 }

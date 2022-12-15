@@ -11,20 +11,22 @@ public:
     void step();
 private:
     void renderLine();
+    void renderBGLine();
+    void clearLine();
 
     enum State{Mode0, Mode1, Mode2, Mode3};
 
     uint8_t* addressBus_;
     uint16_t* frame_;
-    bool VBLANK;
     //const uint16_t VRAM_1 = 0x8000;
     //const uint16_t VRAM_2 = 0x8800;
     //const uint16_t VRAM_3 = 0x97FF;
 
-    const uint16_t VRAM = 0x8000; // 
-    const uint16_t TILE_MAP1 = 0x9800;
-    const uint16_t TILE_MAP2 = 0x9C00;
-    const uint16_t OAM = 0xFE00; // Object Attribute Memory
+    const uint8_t* const VRAM_1;
+    const uint8_t* const VRAM_2;
+    const uint8_t* const TILE_MAP1;
+    const uint8_t* const TILE_MAP2;
+    const uint8_t* const OAM; // Object Attribute Memory
 
     // LCD Registers
     const uint8_t* const LCDC; // LCD Control Register
