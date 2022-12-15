@@ -78,6 +78,15 @@ private:
     void SET(uint8_t, uint8_t, uint8_t);
     void CALL(uint8_t, uint8_t, uint8_t);
     void RET(uint8_t, uint8_t, uint8_t);
+    void RST(uint8_t, uint8_t, uint8_t);
+    void DAA(uint8_t, uint8_t, uint8_t);
+    void CPL(uint8_t, uint8_t, uint8_t);
+    void SCF(uint8_t, uint8_t, uint8_t);
+    void CCF(uint8_t, uint8_t, uint8_t);
+    void DI(uint8_t, uint8_t, uint8_t);
+    void EI(uint8_t, uint8_t, uint8_t);
+    void HALT(uint8_t, uint8_t, uint8_t);
+    void STOP(uint8_t, uint8_t, uint8_t);
 
     // Register helper functions
 
@@ -105,6 +114,7 @@ private:
     uint16_t PC_;
     uint16_t SP_;
     int clock_;
+    bool IME = false;
     bool cbPrefx_ = false;
     bool isHalted_ = false;
     // Only for debug print statements

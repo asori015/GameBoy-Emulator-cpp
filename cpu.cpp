@@ -1109,7 +1109,13 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         }
     }
     else {
-        if (debug_) { printf("RET\n"); }
+        if (reg1 == 0x03) {
+            IME = 1;
+            if (debug_) { printf("RETI\n"); }
+        }
+        else {
+            if (debug_) { printf("RET\n"); }
+        }
     }
 
     uint8_t hAddr = addressBus_[SP_++];
@@ -1117,6 +1123,53 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
     PC_ = (hAddr << 8) + lAddr;
 }
+
+void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    //setC(true);
+    if (debug_) { printf("RST\n"); }
+}
+
+void CPU::DAA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    //setC(true);
+    if (debug_) { printf("CCF\n"); }
+}
+
+void CPU::CPL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    registers_[A] = !registers_[A];
+    if (debug_) { printf("CPL\n"); }
+}
+
+void CPU::SCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    setC(true);
+    if (debug_) { printf("SCF\n"); }
+}
+
+void CPU::CCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    setC(!getC());
+    if (debug_) { printf("CCF\n"); }
+}
+
+void CPU::DI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    IME = false;
+    if (debug_) { printf("DI\n"); }
+}
+
+void CPU::EI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    IME = true;
+    if (debug_) { printf("EI\n"); }
+}
+
+void CPU::HALT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    // IME = true;
+    if (debug_) { printf("HALT\n"); }
+}
+
+
+void CPU::STOP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    // IME = true;
+    if (debug_) { printf("STOP\n"); }
+}
+
 
 void CPU::printRegs() {
     printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nPC: 0x%04X\nSP: 0x%04X\n\n", 
@@ -1271,7 +1324,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::DEC,
     &CPU::LD_8_Bit,
     &CPU::RRC,
-    &CPU::nop,
+    &CPU::STOP,
     &CPU::LD_16_Bit,
     &CPU::LD_8_Bit,
     &CPU::INC_16_BIT,
@@ -1294,7 +1347,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::INC,
     &CPU::DEC,
     &CPU::LD_8_Bit,
-    &CPU::nop,
+    &CPU::DAA,
     &CPU::JR,
     &CPU::ADD_16_BIT,
     &CPU::LD_8_Bit,
@@ -1302,7 +1355,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::INC,
     &CPU::DEC,
     &CPU::LD_8_Bit,
-    &CPU::nop,
+    &CPU::CPL,
     &CPU::JR,
     &CPU::LD_16_Bit,
     &CPU::LD_8_Bit,
@@ -1310,7 +1363,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::INC,
     &CPU::DEC,
     &CPU::LD_8_Bit,
-    &CPU::nop,
+    &CPU::SCF,
     &CPU::JR,
     &CPU::ADD_16_BIT,
     &CPU::LD_8_Bit,
@@ -1318,7 +1371,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::INC,
     &CPU::DEC,
     &CPU::LD_8_Bit,
-    &CPU::nop,
+    &CPU::CCF,
     &CPU::LD_R_to_R,
     &CPU::LD_R_to_R,
     &CPU::LD_R_to_R,
@@ -1373,7 +1426,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::LD_R_to_R,
     &CPU::LD_R_to_R,
     &CPU::LD_R_to_R,
-    &CPU::LD_R_to_R,
+    &CPU::HALT,
     &CPU::LD_R_to_R,
     &CPU::LD_R_to_R,
     &CPU::LD_R_to_R,
@@ -1454,7 +1507,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::CALL,
     &CPU::LD_16_Bit,
     &CPU::ADD,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::RET,
     &CPU::RET,
     &CPU::JP,
@@ -1462,7 +1515,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::CALL,
     &CPU::CALL,
     &CPU::ADD,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::RET,
     &CPU::LD_16_Bit,
     &CPU::JP,
@@ -1470,7 +1523,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::CALL,
     &CPU::LD_16_Bit,
     &CPU::SUB,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::RET,
     &CPU::RET,
     &CPU::JP,
@@ -1478,7 +1531,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::CALL,
     &CPU::nop,
     &CPU::SUB,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::LD_8_Bit,
     &CPU::LD_16_Bit,
     &CPU::LD_8_Bit,
@@ -1486,7 +1539,7 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::nop,
     &CPU::LD_16_Bit,
     &CPU::AND,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::ADD_16_BIT,
     &CPU::JP,
     &CPU::LD_8_Bit,
@@ -1494,23 +1547,23 @@ const CPU::FunctionPointer CPU::instructionMethods1_[256] = {
     &CPU::nop,
     &CPU::nop,
     &CPU::XOR,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::LD_8_Bit,
     &CPU::LD_16_Bit,
     &CPU::LD_8_Bit,
-    &CPU::nop,
+    &CPU::DI,
     &CPU::nop,
     &CPU::LD_16_Bit,
     &CPU::OR,
-    &CPU::nop,
+    &CPU::RST,
     &CPU::LD_16_Bit,
     &CPU::LD_16_Bit,
     &CPU::LD_8_Bit,
-    &CPU::nop,
+    &CPU::EI,
     &CPU::nop,
     &CPU::nop,
     &CPU::CP,
-    &CPU::nop
+    &CPU::RST
 };
 
 const CPU::FunctionPointer CPU::instructionMethods2_[256] = {
