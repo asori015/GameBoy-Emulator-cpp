@@ -9,13 +9,8 @@ class GPU {
 public:
     GPU(Machine*, uint8_t*, uint16_t*);
     void step();
-    bool getVBLANK();
 private:
-    void mode3();
-    void renderFrame();
-    void renderTile(uint8_t , uint16_t* , int );
-    void renderTile(int, int, uint8_t, uint8_t, uint8_t, uint8_t);
-    void renderLine(uint8_t, uint8_t, uint8_t, uint8_t);
+    void renderLine();
 
     enum State{Mode0, Mode1, Mode2, Mode3};
 
@@ -32,11 +27,11 @@ private:
     const uint16_t OAM = 0xFE00; // Object Attribute Memory
 
     // LCD Registers
-    const uint16_t LCDC = 0xFF40; // LCD Control Register
-    const uint16_t STAT = 0xFF41; // LCD Status Flag
-    const uint8_t* SCY; // LCD Scroll Y Register
-    const uint8_t* SCX; // LCD Scroll X Register
-    const uint16_t LY = 0xFF44; // LCDC Y-coordinate
+    const uint8_t* const LCDC; // LCD Control Register
+    const uint8_t* const STAT; // LCD Status Flag
+    const uint8_t* const SCY; // LCD Scroll Y Register
+    const uint8_t* const SCX; // LCD Scroll X Register
+    uint8_t* const LY; // LCDC Y-coordinate
     const uint16_t LYC = 0xFF45; // LY Compare Register
     const uint16_t DMA = 0xFF46; // DMA Transfer and Starting Address
     const uint16_t BGP = 0xFF47; // BG Palette Data

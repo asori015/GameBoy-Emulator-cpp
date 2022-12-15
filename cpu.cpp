@@ -30,6 +30,9 @@ void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
     filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
+    //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
+    //filePath = "D:\\Games\\GBA\\01-special.gb";
+    //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
     std::ifstream gameFile(filePath, std::ios::binary);
     gameFile.read((char*)(addressBus_), 0x7FFF);
     gameFile.close();
@@ -66,21 +69,25 @@ void CPU::execute(uint8_t instruction) {
         debug_ = true;
     }*/
 
-    /*if (PC_ == 0x1F72) {
-        debug_ = true;
-    }*/
+    if (PC_ == 0xC000) {
+        //debug_ = true;
+    }
 
-    if (PC_ == 0x0100) {
+    if (PC_ == 0xC000) {
         loadGameROM("");
         //debug_ = true;
     }
+
+    /*if (instruction == 0x00) {
+        debug_ = true;
+    }*/
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
     (this->*instructionMethods1_[instruction])(opcode, register1, register2);
     clock_ = 4;//instructionMethods1_[instruction].second - 1;
-    if (debug_) { printRegs(); }
+    if (debug_) { printf("Instruction: 0x%x\n", instruction); printRegs(); }
     PC_ += 1;
 }
 
@@ -1115,7 +1122,7 @@ void CPU::printRegs() {
     printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nPC: 0x%04X\nSP: 0x%04X\n\n", 
         registers_[A], registers_[F], registers_[B], registers_[C],
         registers_[D], registers_[E], registers_[H], registers_[L],
-        PC_, SP_);
+        PC_ + 1, SP_);
 }
 
 void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
