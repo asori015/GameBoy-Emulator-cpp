@@ -56,8 +56,28 @@ void CPU::run() {
 
 void CPU::step() {
     if (clock_ == 0) {
-        uint8_t instruction = addressBus_[PC_];
-        execute(instruction);
+        if (IME_ && addressBus_[0xFF0F]) {
+            uint8_t mask = 0x01;
+            for (int i = 0; i < 5; i++) {
+                if ((addressBus_[0xFF0F] & mask) && (addressBus_[0xFFFF] & mask)) {
+                    printf("test");
+                    IME_ = false;
+                    addressBus_[0xFF0F] &= !mask;
+                    addressBus_[--SP_] = 0x00FF & PC_;
+                    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+                    PC_ = 0x0040 + (8 * i);
+                    clock_ += 4;
+                    //debug_ = true;
+                    execute(addressBus_[PC_]);
+                    break;
+                }
+                mask = mask << 1;
+                
+            }
+        }
+        else {
+            execute(addressBus_[PC_]);
+        }
     }
     else {
         clock_ -= 1;
@@ -73,7 +93,7 @@ void CPU::execute(uint8_t instruction) {
         //debug_ = true;
     }
 
-    if (PC_ == 0xC000) {
+    if (PC_ == 0x0100) {
         loadGameROM("");
         //debug_ = true;
     }
@@ -108,6 +128,7 @@ void CPU::LD_R_to_R(uint8_t op, uint8_t reg1, uint8_t reg2) {
         }
         else {
             registers_[reg1] = registers_[reg2];
+            clock_ += 4;
             if (debug_) { printf("LD %c, %c\n", regNames_[reg1], regNames_[reg2]); }
         }
     }
@@ -418,7 +439,7 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
     // Check if carry bit will be used
     if (reg1 == 0x01) {
         carry = getC();
-        printf("ADC ");
+        if (debug_) { printf("ADC "); }
     }
     else {
         //printf("ADD ");
@@ -1110,7 +1131,7 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     }
     else {
         if (reg1 == 0x03) {
-            IME = 1;
+            IME_ = true;
             if (debug_) { printf("RETI\n"); }
         }
         else {
@@ -1150,12 +1171,12 @@ void CPU::CCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::DI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    IME = false;
+    IME_ = false;
     if (debug_) { printf("DI\n"); }
 }
 
 void CPU::EI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    IME = true;
+    IME_ = true;
     if (debug_) { printf("EI\n"); }
 }
 

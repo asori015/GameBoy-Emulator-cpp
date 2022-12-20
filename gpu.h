@@ -27,15 +27,16 @@ private:
     const uint8_t* const TILE_MAP1;
     const uint8_t* const TILE_MAP2;
     const uint8_t* const OAM; // Object Attribute Memory
+    uint8_t* const IF; // Interupt Flag
 
     // LCD Registers
     const uint8_t* const LCDC; // LCD Control Register
-    const uint8_t* const STAT; // LCD Status Flag
+    uint8_t* const STAT; // LCD Status Flag
     const uint8_t* const SCY; // LCD Scroll Y Register
     const uint8_t* const SCX; // LCD Scroll X Register
     uint8_t* const LY; // LCDC Y-coordinate
-    const uint16_t LYC = 0xFF45; // LY Compare Register
-    const uint16_t DMA = 0xFF46; // DMA Transfer and Starting Address
+    const uint8_t* const LYC; // LY Compare Register
+    const uint8_t* const DMA; // DMA Transfer and Starting Address
     const uint16_t BGP = 0xFF47; // BG Palette Data
     const uint16_t OBP0 = 0xFF48; // OBJ Palette Data 0
     const uint16_t OBP1 = 0xFF49; // OBJ Palette Data 1
@@ -44,4 +45,5 @@ private:
 
     int state_;
     int clock_;
+    bool statInterupt_;
 };

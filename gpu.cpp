@@ -6,11 +6,14 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) :
     TILE_MAP1(&addressBus[0x9800]),
     TILE_MAP2(&addressBus[0x9C00]),
     OAM(&addressBus[0xFE00]),
+    IF(&addressBus[0xFF0F]),
     LCDC(&addressBus[0xFF40]),
     STAT(&addressBus[0xFF41]),
     SCY(&addressBus[0xFF42]),
     SCX(&addressBus[0xFF43]),
-    LY(&addressBus[0xFF44])
+    LY(&addressBus[0xFF44]),
+    LYC(&addressBus[0xFF45]),
+    DMA(&addressBus[0xFF46])
 {
     this->addressBus_ = addressBus;
     this->frame_ = frame;
@@ -25,22 +28,55 @@ void GPU::step() {
         {
         case State::Mode0: // H-Blank
             if (clock_ >= 456) {
-                *LY = (*LY + 1) % 154;
-                if (*LY >= 144) {
+                //*LY = (*LY + 1) % 154;
+                if (*LY >= 143) {
                     state_ = State::Mode1;
+                    *STAT &= 0xFC; // Set mode on STAT register
+                    *STAT |= 0x01;
+                    *LY += 1;
+                    *IF |= 0x01; // Set V-BLANK interupt
+                    if (*STAT & 0x10) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
                 }
                 else {
                     state_ = State::Mode2;
+                    *STAT &= 0xFC; // Set mode on STAT register
+                    *STAT |= 0x02;
+                    *LY += 1;
+                    // Temporary location for LY LCY interupt
+                    if (*LY == *LYC) {
+                        if (*STAT & 0x40) {
+                            *IF |= 0x02;
+                        }
+                        *STAT |= 0x04;
+                    }
+                    else {
+                        *STAT &= 0xFB;
+                    }
+                    if (*STAT & 0x20) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
                 }
                 clock_ = -1;
             }
             break;
         case State::Mode1: // V-Blank
             if (clock_ >= 456) {
-                *LY = (*LY + 1) % 154;
-                if (*LY == 0) {
+                *LY += 1;
+                if (*LY == 0x9A) {
                     state_ = State::Mode2;
-                    //printf("1 ");
+                    *STAT &= 0xFC; // Set mode on STAT register
+                    *STAT |= 0x02;
+                    *LY = 0;
+                    // Temporary location for LY LCY interupt
+                    if (*LY == *LYC) {
+                        if (*STAT & 0x40) {
+                            *IF |= 0x02;
+                        }
+                        *STAT |= 0x04;
+                    }
+                    else {
+                        *STAT &= 0xFB;
+                    }
+                    if (*STAT & 0x20) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
+                    printf("1 ");
                 }
                 clock_ = -1;
             }
@@ -48,12 +84,16 @@ void GPU::step() {
         case State::Mode2: // OAM Scan
             if (clock_ >= 80) {
                 state_ = State::Mode3;
+                *STAT |= 0X03; // Set mode on STAT register
+
             }
             break;
         case State::Mode3: // Drawing Pixels
             if (clock_ >= 172) {
                 // Transition into H-BLANK
                 state_ = State::Mode0;
+                *STAT &= 0XFC; // Set mode on STAT register
+                if (*STAT & 0x08) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
                 renderLine();
             }
             break;

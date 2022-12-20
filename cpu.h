@@ -114,7 +114,7 @@ private:
     uint16_t PC_;
     uint16_t SP_;
     int clock_;
-    bool IME = false;
+    bool IME_ = false;
     bool cbPrefx_ = false;
     bool isHalted_ = false;
     // Only for debug print statements
