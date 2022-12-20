@@ -28,7 +28,6 @@ void GPU::step() {
         {
         case State::Mode0: // H-Blank
             if (clock_ >= 456) {
-                //*LY = (*LY + 1) % 154;
                 if (*LY >= 143) {
                     state_ = State::Mode1;
                     *STAT &= 0xFC; // Set mode on STAT register
@@ -42,16 +41,6 @@ void GPU::step() {
                     *STAT &= 0xFC; // Set mode on STAT register
                     *STAT |= 0x02;
                     *LY += 1;
-                    // Temporary location for LY LCY interupt
-                    if (*LY == *LYC) {
-                        if (*STAT & 0x40) {
-                            *IF |= 0x02;
-                        }
-                        *STAT |= 0x04;
-                    }
-                    else {
-                        *STAT &= 0xFB;
-                    }
                     if (*STAT & 0x20) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
                 }
                 clock_ = -1;
@@ -65,16 +54,6 @@ void GPU::step() {
                     *STAT &= 0xFC; // Set mode on STAT register
                     *STAT |= 0x02;
                     *LY = 0;
-                    // Temporary location for LY LCY interupt
-                    if (*LY == *LYC) {
-                        if (*STAT & 0x40) {
-                            *IF |= 0x02;
-                        }
-                        *STAT |= 0x04;
-                    }
-                    else {
-                        *STAT &= 0xFB;
-                    }
                     if (*STAT & 0x20) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
                     printf("1 ");
                 }
@@ -101,12 +80,24 @@ void GPU::step() {
             break;
         }
 
+        if (*LY == *LYC) {
+            if ((*STAT & 0x04) == 0) {
+                if (*STAT & 0x40) {
+                    *IF |= 0x02;
+                }
+                *STAT |= 0x04;
+            }
+        }
+        else {
+            *STAT &= 0xFB;
+        }
+
         clock_++;
     }
 }
 
 void GPU::renderLine() {
-    clearLine();
+    //clearLine();
     if (*LCDC & 0x01) {
         renderBGLine();
     }

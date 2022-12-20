@@ -10,6 +10,7 @@ CPU::CPU(Machine* machine, uint8_t* addressBus) {
     this->PC_ = 0;
     this->SP_ = 0;
     this->clock_ = 0;
+    this->isHalted_ = false;
     //this->debug_ = true;
     this->addressBus_ = addressBus;
     this->loadGameROM("");
@@ -56,28 +57,32 @@ void CPU::run() {
 
 void CPU::step() {
     if (clock_ == 0) {
-        if (IME_ && addressBus_[0xFF0F]) {
+        if (addressBus_[0xFF0F]) {
             uint8_t mask = 0x01;
             for (int i = 0; i < 5; i++) {
                 if ((addressBus_[0xFF0F] & mask) && (addressBus_[0xFFFF] & mask)) {
-                    printf("test");
-                    IME_ = false;
-                    addressBus_[0xFF0F] &= !mask;
-                    addressBus_[--SP_] = 0x00FF & PC_;
-                    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
-                    PC_ = 0x0040 + (8 * i);
-                    clock_ += 4;
-                    //debug_ = true;
-                    execute(addressBus_[PC_]);
+                    isHalted_ = false;
+
+                    if (IME_) {
+                        //printf("test");
+                        IME_ = false;
+                        addressBus_[0xFF0F] &= !mask;
+                        addressBus_[--SP_] = 0x00FF & PC_;
+                        addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+                        PC_ = 0x0040 + (8 * i);
+                        clock_ += 4;
+                        //debug_ = true;
+                    }
                     break;
                 }
                 mask = mask << 1;
                 
             }
         }
-        else {
+        if (!isHalted_) {
             execute(addressBus_[PC_]);
         }
+        
     }
     else {
         clock_ -= 1;
@@ -1181,7 +1186,7 @@ void CPU::EI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::HALT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    // IME = true;
+    isHalted_ = true;
     if (debug_) { printf("HALT\n"); }
 }
 
