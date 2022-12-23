@@ -210,7 +210,61 @@ void GPU::renderWindowLine() {
 }
 
 void GPU::renderObjectLine() {
-    ;
+    int yCount = 0;
+    for (int i = 0; i < 40; i++) {
+        int y = *(OAM + (i * 4)) - *LY;
+        int x = *(OAM + (i * 4) + 1) - 8;
+        const uint8_t* VRAM_Pointer = VRAM_1 + (*(OAM + (i * 4) + 2) * 16);
+
+        if (*LCDC & 0x04) {
+            if (y < 1 || y > 16) {
+                continue;
+            }
+        }
+        else {
+            if (y < 9 || y > 16) {
+                continue;
+            }
+        }
+
+        y = (y - 16) * -1;
+
+        uint8_t lBits = *(VRAM_Pointer + ((y % 8) * 2));
+        uint8_t hBits = *(VRAM_Pointer + ((y % 8) * 2) + 1);
+        uint8_t mask = 0x80;
+
+        for (int j = 0; j < 8; j++) {
+            if (x >= 0 || x < 160) {
+                uint16_t color;
+
+                if (hBits & mask) {
+                    if (lBits & mask) {
+                        color = 0x0000;
+                    }
+                    else {
+                        color = 0x294A;
+                    }
+                }
+                else {
+                    if (lBits & mask) {
+                        color = 0x56B5;
+                    }
+                    else {
+                        color = 0xFFFF;
+                    }
+                }
+
+                frame_[(*LY * 160) + x] = color;
+            }
+            mask = mask >> 1;
+            x++;
+        }
+
+        yCount += 1;
+        if (yCount == 10) {
+            break;
+        }
+    }
 }
 
 void GPU::clearLine() {

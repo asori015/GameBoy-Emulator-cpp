@@ -20,9 +20,6 @@ private:
 
     uint8_t* addressBus_;
     uint16_t* frame_;
-    //const uint16_t VRAM_1 = 0x8000;
-    //const uint16_t VRAM_2 = 0x8800;
-    //const uint16_t VRAM_3 = 0x97FF;
 
     const uint8_t* const VRAM_1;
     const uint8_t* const VRAM_2;
