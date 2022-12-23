@@ -227,38 +227,78 @@ void GPU::renderObjectLine() {
             }
         }
 
-        y = (y - 16) * -1;
+        uint8_t attributes = *(OAM + (i * 4) + 3);
+        if (attributes & 0x40) {
+            y = y - 1;
+        }
+        else {
+            y = 16 - y;
+        }
 
         uint8_t lBits = *(VRAM_Pointer + ((y % 8) * 2));
         uint8_t hBits = *(VRAM_Pointer + ((y % 8) * 2) + 1);
-        uint8_t mask = 0x80;
 
-        for (int j = 0; j < 8; j++) {
-            if (x >= 0 || x < 160) {
-                uint16_t color;
+        if (attributes & 0x20) {
+            uint8_t mask = 0x01;
 
-                if (hBits & mask) {
-                    if (lBits & mask) {
-                        color = 0x0000;
+            for (int j = 0; j < 8; j++) {
+                if (x >= 0 || x < 160) {
+                    uint16_t color;
+
+                    if (hBits & mask) {
+                        if (lBits & mask) {
+                            color = 0x0000;
+                        }
+                        else {
+                            color = 0x294A;
+                        }
                     }
                     else {
-                        color = 0x294A;
+                        if (lBits & mask) {
+                            color = 0x56B5;
+                        }
+                        else {
+                            color = 0xFFFF;
+                        }
                     }
-                }
-                else {
-                    if (lBits & mask) {
-                        color = 0x56B5;
-                    }
-                    else {
-                        color = 0xFFFF;
-                    }
-                }
 
-                frame_[(*LY * 160) + x] = color;
+                    frame_[(*LY * 160) + x] = color;
+                }
+                mask = mask << 1;
+                x++;
             }
-            mask = mask >> 1;
-            x++;
         }
+        else {
+            uint8_t mask = 0x80;
+
+            for (int j = 0; j < 8; j++) {
+                if (x >= 0 || x < 160) {
+                    uint16_t color;
+
+                    if (hBits & mask) {
+                        if (lBits & mask) {
+                            color = 0x0000;
+                        }
+                        else {
+                            color = 0x294A;
+                        }
+                    }
+                    else {
+                        if (lBits & mask) {
+                            color = 0x56B5;
+                        }
+                        else {
+                            color = 0xFFFF;
+                        }
+                    }
+
+                    frame_[(*LY * 160) + x] = color;
+                }
+                mask = mask >> 1;
+                x++;
+            }
+        }
+        
 
         yCount += 1;
         if (yCount == 10) {

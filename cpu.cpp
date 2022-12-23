@@ -90,22 +90,24 @@ void CPU::step() {
 }
 
 void CPU::execute(uint8_t instruction) {
-    /*if (PC_ == 0x1F72) {
-        debug_ = true;
-    }*/
-
-    if (PC_ == 0xC000) {
-        //debug_ = true;
-    }
+    //if (instruction == 0) {
+    //    int j = 0;
+    //    for (int i = 0x8000; i < 0x97FF; i++) {
+    //        //printf("0x%02X ", addressBus_[i]);
+    //        while (j < 16) {
+    //            printf("%02X ", addressBus_[i]);
+    //            j++;
+    //        }
+    //        printf("\n");
+    //        j = 0;
+    //    }
+    //    //debug_ = true;
+    //}
 
     if (PC_ == 0x0100) {
         loadGameROM("");
         //debug_ = true;
     }
-
-    /*if (instruction == 0x00) {
-        debug_ = true;
-    }*/
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
@@ -495,16 +497,16 @@ void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
         nVal = addressBus_[++PC_];
-        if (debug_) { printf("A, 0x % 02X\n", nVal); }
+        if (debug_) { printf("SUB A, 0x % 02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             nVal = addressBus_[getHL()];
-            if (debug_) { printf("A, (HL)\n"); }
+            if (debug_) { printf("SUB A, (HL)\n"); }
         }
         else {
             nVal = registers_[reg2];
-            if (debug_) { printf("A, %c\n", regNames_[reg2]); }
+            if (debug_) { printf("SUB A, %c\n", regNames_[reg2]); }
         }
     }
 
