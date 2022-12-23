@@ -14,6 +14,9 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) :
     LY(&addressBus[0xFF44]),
     LYC(&addressBus[0xFF45]),
     DMA(&addressBus[0xFF46]),
+    BGP(&addressBus[0xFF47]),
+    OBP0(&addressBus[0xFF48]),
+    OBP1(&addressBus[0xFF49]),
     WY(&addressBus[0xFF4A]),
     WX(&addressBus[0xFF4B])
 {
@@ -145,18 +148,19 @@ void GPU::renderBackgroundLine() {
 
         if (hBits & mask) {
             if (lBits & mask) {
-                color = 0x0000;
+                color = colorValues[(*BGP & 0xC0) >> 6];
             }
             else {
-                color = 0x294A;
+                color = colorValues[(*BGP & 0x30) >> 4];
             }
         }
         else {
             if (lBits & mask) {
-                color = 0x56B5;
+                color = colorValues[(*BGP & 0x0C) >> 2];
             }
             else {
-                color = 0xFFFF;
+                color = colorValues[(*BGP & 0x03)];
+                
             }
         }
 
@@ -186,18 +190,19 @@ void GPU::renderWindowLine() {
 
             if (hBits & mask) {
                 if (lBits & mask) {
-                    color = 0x0000;
+                    color = colorValues[(*BGP & 0xC0) >> 6];
                 }
                 else {
-                    color = 0x294A;
+                    color = colorValues[(*BGP & 0x30) >> 4];
                 }
             }
             else {
                 if (lBits & mask) {
-                    color = 0x56B5;
+                    color = colorValues[(*BGP & 0x0C) >> 2];
                 }
                 else {
-                    color = 0xFFFF;
+                    color = colorValues[(*BGP & 0x03)];
+
                 }
             }
 
@@ -237,68 +242,56 @@ void GPU::renderObjectLine() {
 
         uint8_t lBits = *(VRAM_Pointer + ((y % 8) * 2));
         uint8_t hBits = *(VRAM_Pointer + ((y % 8) * 2) + 1);
+        uint8_t mask;
 
         if (attributes & 0x20) {
-            uint8_t mask = 0x01;
-
-            for (int j = 0; j < 8; j++) {
-                if (x >= 0 || x < 160) {
-                    uint16_t color;
-
-                    if (hBits & mask) {
-                        if (lBits & mask) {
-                            color = 0x0000;
-                        }
-                        else {
-                            color = 0x294A;
-                        }
-                    }
-                    else {
-                        if (lBits & mask) {
-                            color = 0x56B5;
-                        }
-                        else {
-                            color = 0xFFFF;
-                        }
-                    }
-
-                    frame_[(*LY * 160) + x] = color;
-                }
-                mask = mask << 1;
-                x++;
-            }
+            mask = 0x01;
         }
         else {
-            uint8_t mask = 0x80;
+            mask = 0x80;
+        }
 
-            for (int j = 0; j < 8; j++) {
-                if (x >= 0 || x < 160) {
-                    uint16_t color;
+        for (int j = 0; j < 8; j++) {
+            if (x >= 0 || x < 160) {
+                uint16_t color;
+                const uint8_t* pallete;
 
-                    if (hBits & mask) {
-                        if (lBits & mask) {
-                            color = 0x0000;
-                        }
-                        else {
-                            color = 0x294A;
-                        }
+                if (attributes & 0x10) {
+                    pallete = OBP1;
+                }
+                else {
+                    pallete = OBP0;
+                }
+
+                if (hBits & mask) {
+                    if (lBits & mask) {
+                        color = colorValues[(*pallete & 0xC0) >> 6];
                     }
                     else {
-                        if (lBits & mask) {
-                            color = 0x56B5;
-                        }
-                        else {
-                            color = 0xFFFF;
-                        }
+                        color = colorValues[(*pallete & 0x30) >> 4];
                     }
-
-                    frame_[(*LY * 160) + x] = color;
                 }
-                mask = mask >> 1;
-                x++;
+                else {
+                    if (lBits & mask) {
+                        color = colorValues[(*pallete & 0x0C) >> 2];
+                    }
+                    else {
+                        color = colorValues[(*pallete & 0x03)];
+                    }
+                }
+
+                frame_[(*LY * 160) + x] = color;
             }
+
+            if (attributes & 0x20) {
+                mask = mask << 1;
+            }
+            else {
+                mask = mask >> 1;
+            }
+
+            x++;
         }
-        
 
         yCount += 1;
         if (yCount == 10) {

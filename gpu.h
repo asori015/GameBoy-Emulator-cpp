@@ -36,12 +36,13 @@ private:
     uint8_t* const LY; // LCDC Y-coordinate
     const uint8_t* const LYC; // LY Compare Register
     const uint8_t* const DMA; // DMA Transfer and Starting Address
-    const uint16_t BGP = 0xFF47; // BG Palette Data
-    const uint16_t OBP0 = 0xFF48; // OBJ Palette Data 0
-    const uint16_t OBP1 = 0xFF49; // OBJ Palette Data 1
+    const uint8_t* const BGP; // BG Palette Data
+    const uint8_t* const OBP0; // OBJ Palette Data 0
+    const uint8_t* const OBP1; // OBJ Palette Data 1
     const uint8_t* const WY; // Window X-Coordinate
     const uint8_t* const WX; // Window Y-Coordinate
     uint8_t windowLineCounter_;
+    const uint16_t colorValues[4] = { 0xFFFF, 0x56B5, 0x294A, 0x0000 };
 
     int state_;
     int clock_;
