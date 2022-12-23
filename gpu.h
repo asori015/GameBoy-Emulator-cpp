@@ -11,7 +11,9 @@ public:
     void step();
 private:
     void renderLine();
-    void renderBGLine();
+    void renderBackgroundLine();
+    void renderWindowLine();
+    void renderObjectLine();
     void clearLine();
 
     enum State{Mode0, Mode1, Mode2, Mode3};
@@ -40,8 +42,9 @@ private:
     const uint16_t BGP = 0xFF47; // BG Palette Data
     const uint16_t OBP0 = 0xFF48; // OBJ Palette Data 0
     const uint16_t OBP1 = 0xFF49; // OBJ Palette Data 1
-    const uint16_t WY = 0xFF4A; // Window X-Coordinate
-    const uint16_t WX = 0xFF4B; // Window Y-Coordinate
+    const uint8_t* const WY; // Window X-Coordinate
+    const uint8_t* const WX; // Window Y-Coordinate
+    uint8_t windowLineCounter_;
 
     int state_;
     int clock_;

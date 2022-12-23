@@ -13,12 +13,15 @@ GPU::GPU(Machine* machine, uint8_t* addressBus, uint16_t* frame) :
     SCX(&addressBus[0xFF43]),
     LY(&addressBus[0xFF44]),
     LYC(&addressBus[0xFF45]),
-    DMA(&addressBus[0xFF46])
+    DMA(&addressBus[0xFF46]),
+    WY(&addressBus[0xFF4A]),
+    WX(&addressBus[0xFF4B])
 {
     this->addressBus_ = addressBus;
     this->frame_ = frame;
     this->state_ = State::Mode2;
     this->clock_ = 0;
+    this->windowLineCounter_ = 0;
 }
 
 void GPU::step() {
@@ -35,6 +38,7 @@ void GPU::step() {
                     *LY += 1;
                     *IF |= 0x01; // Set V-BLANK interupt
                     if (*STAT & 0x10) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
+                    windowLineCounter_ = 0;
                 }
                 else {
                     state_ = State::Mode2;
@@ -99,15 +103,21 @@ void GPU::step() {
 void GPU::renderLine() {
     //clearLine();
     if (*LCDC & 0x01) {
-        renderBGLine();
+        renderBackgroundLine();
+    }
+    if (*LCDC & 0x20) {
+        renderWindowLine();
+    }
+    if (*LCDC & 0x02) {
+        renderObjectLine();
     }
 }
 
-void GPU::renderBGLine() {
+void GPU::renderBackgroundLine() {
     for (int i = 0; i < 160; i++) {
-        int x = (*SCX + i) % 255;
-        int y = (*SCY + *LY) % 255;
-        int tileIndex = (y / 8) * 32 + (x / 8);
+        int x = (*SCX + i) % 256;
+        int y = (*SCY + *LY) % 256;
+        int tileIndex = ((y / 8) * 32) + (x / 8);
         const uint8_t* VRAM_Pointer;
 
         if (*LCDC & 0x10) {
@@ -152,6 +162,55 @@ void GPU::renderBGLine() {
 
         frame_[(*LY * 160) + i] = color;
     }
+}
+
+void GPU::renderWindowLine() {
+    if (*LY >= *WY) {
+        for (int i = *WX - 7; i < 160; i++) {
+            int x = i + 7 - *WX;
+            int y = windowLineCounter_;
+            int tileIndex = ((y / 8) * 32) + (x / 8);
+            const uint8_t* VRAM_Pointer;
+
+            if (*LCDC & 0x40) {
+                VRAM_Pointer = VRAM_1 + (*(TILE_MAP2 + tileIndex) * 16);
+            }
+            else {
+                VRAM_Pointer = VRAM_1 + (*(TILE_MAP1 + tileIndex) * 16);
+            }
+
+            uint8_t lBits = *(VRAM_Pointer + ((y % 8) * 2));
+            uint8_t hBits = *(VRAM_Pointer + ((y % 8) * 2) + 1);
+            uint8_t mask = 0x80 >> (x % 8);
+            uint16_t color;
+
+            if (hBits & mask) {
+                if (lBits & mask) {
+                    color = 0x0000;
+                }
+                else {
+                    color = 0x294A;
+                }
+            }
+            else {
+                if (lBits & mask) {
+                    color = 0x56B5;
+                }
+                else {
+                    color = 0xFFFF;
+                }
+            }
+
+            frame_[(*LY * 160) + i] = color;
+        }
+        if (*WX <= 166) {
+            windowLineCounter_++;
+        }
+    }
+}
+
+void GPU::renderObjectLine() {
+    ;
 }
 
 void GPU::clearLine() {
