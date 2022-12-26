@@ -56,54 +56,17 @@ void CPU::run() {
 }
 
 void CPU::step() {
-    if (clock_ == 0) {
-        if (addressBus_[0xFF0F]) {
-            uint8_t mask = 0x01;
-            for (int i = 0; i < 5; i++) {
-                if ((addressBus_[0xFF0F] & mask) && (addressBus_[0xFFFF] & mask)) {
-                    isHalted_ = false;
+    checkForInterupts();
 
-                    if (IME_) {
-                        //printf("test");
-                        IME_ = false;
-                        addressBus_[0xFF0F] &= !mask;
-                        addressBus_[--SP_] = 0x00FF & PC_;
-                        addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
-                        PC_ = 0x0040 + (8 * i);
-                        clock_ += 4;
-                        //debug_ = true;
-                    }
-                    break;
-                }
-                mask = mask << 1;
-                
-            }
-        }
-        if (!isHalted_) {
+    if(!isHalted_) {
+        if (clock_ == 0) {
             execute(addressBus_[PC_]);
         }
-        
-    }
-    else {
         clock_ -= 1;
     }
 }
 
 void CPU::execute(uint8_t instruction) {
-    //if (instruction == 0) {
-    //    int j = 0;
-    //    for (int i = 0x8000; i < 0x97FF; i++) {
-    //        //printf("0x%02X ", addressBus_[i]);
-    //        while (j < 16) {
-    //            printf("%02X ", addressBus_[i]);
-    //            j++;
-    //        }
-    //        printf("\n");
-    //        j = 0;
-    //    }
-    //    //debug_ = true;
-    //}
-
     if (PC_ == 0x0100) {
         loadGameROM("");
         //debug_ = true;
@@ -113,29 +76,48 @@ void CPU::execute(uint8_t instruction) {
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
     (this->*instructionMethods1_[instruction])(opcode, register1, register2);
-    clock_ = 4;//instructionMethods1_[instruction].second - 1;
     if (debug_) { printf("Instruction: 0x%x\n", instruction); printRegs(); }
     PC_ += 1;
 }
 
+void CPU::checkForInterupts() {
+    if (addressBus_[0xFF0F]) {
+        uint8_t mask = 0x01;
+        for (int i = 0; i < 5; i++) {
+            if ((addressBus_[0xFF0F] & mask) && (addressBus_[0xFFFF] & mask)) {
+                isHalted_ = false;
+
+                if (IME_) {
+                    IME_ = false;
+                    addressBus_[0xFF0F] &= !mask;
+                    addressBus_[--SP_] = 0x00FF & PC_;
+                    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+                    PC_ = 0x0040 + (8 * i);
+                    clock_ += 4;
+                }
+                break;
+            }
+            mask = mask << 1;
+
+        }
+    }
+}
+
 void CPU::LD_R_to_R(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        if (reg1 == 0x06) {
-            // HALT INSTRUCTION
-        }
-        else {
-            registers_[reg1] = addressBus_[getHL()];
-            if (debug_) { printf("LD %c, (HL)\n", regNames_[reg1]); }
-        }
+        registers_[reg1] = addressBus_[getHL()];
+        clock_ = 8;
+        if (debug_) { printf("LD %c, (HL)\n", regNames_[reg1]); }
     }
     else {
         if (reg1 == 0x06) {
             addressBus_[getHL()] = registers_[reg2];
+            clock_ = 8;
             if (debug_) { printf("LD (HL), %c\n", regNames_[reg2]); }
         }
         else {
             registers_[reg1] = registers_[reg2];
-            clock_ += 4;
+            clock_ = 4;
             if (debug_) { printf("LD %c, %c\n", regNames_[reg1], regNames_[reg2]); }
         }
     }
@@ -149,11 +131,13 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             case 0x04:
                 address = 0xFF00 + addressBus_[++PC_];
                 addressBus_[address] = registers_[A];
+                clock_ = 12;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x06:
                 address = 0xFF00 + addressBus_[++PC_];
                 registers_[A] = addressBus_[address];
+                clock_ = 12;
                 if (debug_) { printf("LD A, (0x%04X)\n", address); }
                 break;
             default:
@@ -165,21 +149,25 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             case 0x04:
                 address = 0xFF00 + registers_[C];
                 addressBus_[address] = registers_[A];
+                clock_ = 8;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x05:
                 address = addressBus_[++PC_] + (addressBus_[++PC_] << 8);
                 addressBus_[address] = registers_[A];
+                clock_ = 16;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x06:
                 address = 0xFF00 + registers_[C];
                 registers_[A] = addressBus_[address];
+                clock_ = 8;
                 if (debug_) { printf("LD A, (0x%04X)\n", address); }
                 break;
             case 0x07:
                 address = addressBus_[++PC_] + (addressBus_[++PC_] << 8);
                 registers_[A] = addressBus_[address];
+                clock_ = 16;
                 if (debug_) { printf("LD A, (0x%04X)\n", address); }
                 break;
             default:
@@ -194,38 +182,46 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             {
             case 0x00:
                 addressBus_[getBC()] = registers_[A];
+                clock_ = 8;
                 if (debug_) { printf("LD (BC), A\n"); }
                 break;
             case 0x01:
                 registers_[A] = addressBus_[getBC()];
+                clock_ = 8;
                 if (debug_) { printf("LD A, (BC)\n"); }
                 break;
             case 0x02:
                 addressBus_[getDE()] = registers_[A];
+                clock_ = 8;
                 if (debug_) { printf("LD (DE), A\n"); }
                 break;
             case 0x03:
                 registers_[A] = addressBus_[getDE()];
+                clock_ = 8;
                 if (debug_) { printf("LD A, (DE)\n"); }
                 break;
             case 0x04:
                 addressBus_[hl] = registers_[A];
                 setHL(hl + 1);
+                clock_ = 8;
                 if (debug_) { printf("LD (HL+), A\n"); }
                 break;
             case 0x05:
                 registers_[A] = addressBus_[hl];
                 setHL(hl + 1);
+                clock_ = 8;
                 if (debug_) { printf("LD A, (HL+)\n"); }
                 break;
             case 0x06:
                 addressBus_[hl] = registers_[A];
                 setHL(hl - 1);
+                clock_ = 8;
                 if (debug_) { printf("LD (HL-), A\n"); }
                 break;
             case 0x07:
                 registers_[A] = addressBus_[hl];
                 setHL(hl - 1);
+                clock_ = 8;
                 if (debug_) { printf("LD A, (HL-)\n"); }
                 break;
             default:
@@ -236,10 +232,12 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             uint8_t val = addressBus_[++PC_];
             if (reg1 == 0x06) {
                 addressBus_[getHL()] = val;
+                clock_ = 12;
                 if (debug_) { printf("LD (HL), 0x%02X\n", val); }
             }
             else {
                 registers_[reg1] = val;
+                clock_ = 8;
                 if (debug_) { printf("LD %c, 0x%02X\n", regNames_[reg1], val); }
             }
         }
@@ -257,28 +255,33 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
                 lVal = addressBus_[SP_++];
                 hVal = addressBus_[SP_++];
                 setBC(hVal, lVal);
+                clock_ = 12;
                 if (debug_) { printf("POP BC\n"); }
                 break;
             case 0x02:
                 lVal = addressBus_[SP_++];
                 hVal = addressBus_[SP_++];
                 setDE(hVal, lVal);
+                clock_ = 12;
                 if (debug_) { printf("POP DE\n"); }
                 break;
             case 0x04:
                 lVal = addressBus_[SP_++];
                 hVal = addressBus_[SP_++];
                 setHL(hVal, lVal);
+                clock_ = 12;
                 if (debug_) { printf("POP HL\n"); }
                 break;
             case 0x06:
                 lVal = addressBus_[SP_++];
                 hVal = addressBus_[SP_++];
                 setAF(hVal, lVal);
+                clock_ = 12;
                 if (debug_) { printf("POP AF\n"); }
                 break;
             case 0x07:
                 SP_ = getHL();
+                clock_ = 8;
                 if (debug_) { printf("LD SP, HL\n"); }
                 break;
             default:
@@ -293,21 +296,25 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             case 0x00:
                 addressBus_[--SP_] = registers_[B];
                 addressBus_[--SP_] = registers_[C];
+                clock_ = 16;
                 if (debug_) { printf("PUSH BC\n"); }
                 break;
             case 0x02:
                 addressBus_[--SP_] = registers_[D];
                 addressBus_[--SP_] = registers_[E];
+                clock_ = 16;
                 if (debug_) { printf("PUSH DE\n"); }
                 break;
             case 0x04:
                 addressBus_[--SP_] = registers_[H];
                 addressBus_[--SP_] = registers_[L];
+                clock_ = 16;
                 if (debug_) { printf("PUSH HL\n"); }
                 break;
             case 0x06:
                 addressBus_[--SP_] = registers_[A];
                 addressBus_[--SP_] = registers_[F];
+                clock_ = 16;
                 if (debug_) { printf("PUSH AF\n"); }
                 break;
             case 0x07:
@@ -323,6 +330,7 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
                 setN(false);
                 setZ(false);
 
+                clock_ = 12;
                 if (debug_) { printf("HL, SP+%d\n", val); }
                 break;
             default:
@@ -338,24 +346,29 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
         {
         case 0x00:
             setBC(hVal, lVal);
+            clock_ = 12;
             if (debug_) { printf("LD BC, 0x%02X%02X\n", hVal, lVal); }
             break;
         case 0x01:
             addr = (hVal << 8) + lVal;
             addressBus_[addr] = getSP() & 0x00FF;
             addressBus_[addr + 1] = (getSP() & 0xFF00) >> 8;
+            clock_ = 20;
             if (debug_) { printf("LD (0x%04X), SP\n", addr); }
             break;
         case 0x02:
             setDE(hVal, lVal);
+            clock_ = 12;
             if (debug_) { printf("LD DE, 0x%02X%02X\n", hVal, lVal); }
             break;
         case 0x04:
             setHL(hVal, lVal);
+            clock_ = 12;
             if (debug_) { printf("LD HL, 0x%02X%02X\n", hVal, lVal); }
             break;
         case 0x06:
             SP_ = (hVal << 8) + lVal;
+            clock_ = 12;
             if (debug_) { printf("LD SP, 0x%02X%02X\n", hVal, lVal); }
             break;
         default:
@@ -367,12 +380,14 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
 void CPU::JP(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x01) {
         PC_ = getHL() - 1;
+        clock_ = 4;
         if (debug_) { printf("JP HL\n"); }
     }
     else {
         uint8_t lVal = addressBus_[++PC_];
         uint8_t hVal = addressBus_[++PC_];
         uint16_t addr = (hVal << 8) + lVal;
+        clock_ = 12;
 
         if (reg2 == 0x02) {
             switch (reg1)
@@ -402,11 +417,13 @@ void CPU::JP(uint8_t op, uint8_t reg1, uint8_t reg2) {
         }
 
         PC_ = addr - 1;
+        clock_ = 16;
     }
 }
 
 void CPU::JR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     int8_t nVal = addressBus_[++PC_];
+    clock_ = 8;
 
     if (reg1 != 0x03) {
         switch (reg1)
@@ -436,6 +453,7 @@ void CPU::JR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     }
     
     PC_ += nVal;
+    clock_ = 12;
 }
 
 void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
@@ -449,21 +467,24 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
         if (debug_) { printf("ADC "); }
     }
     else {
-        //printf("ADD ");
+        if (debug_) { printf("ADD "); }
     }
 
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
         nVal = addressBus_[++PC_];
+        clock_ = 8;
         if (debug_) { printf("A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             nVal = addressBus_[getHL()];
+            clock_ = 8;
             if (debug_) { printf("A, (HL)\n"); }
         }
         else {
             nVal = registers_[reg2];
+            clock_ = 4;
             if (debug_) { printf("A, %c\n", regNames_[reg2]); }
         }
     }
@@ -488,25 +509,28 @@ void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
     // Check if carry bit will be used
     if (reg1 == 0x03) {
         carry = getC();
-        // printf("SBC ");
+        if (debug_) { printf("SBC "); }
     }
     else {
-        // printf("SUB ");
+        if (debug_) { printf("SUB "); }
     }
 
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
         nVal = addressBus_[++PC_];
-        if (debug_) { printf("SUB A, 0x % 02X\n", nVal); }
+        clock_ = 8;
+        if (debug_) { printf("A, 0x % 02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             nVal = addressBus_[getHL()];
-            if (debug_) { printf("SUB A, (HL)\n"); }
+            clock_ = 8;
+            if (debug_) { printf("A, (HL)\n"); }
         }
         else {
             nVal = registers_[reg2];
-            if (debug_) { printf("SUB A, %c\n", regNames_[reg2]); }
+            clock_ = 4;
+            if (debug_) { printf("A, %c\n", regNames_[reg2]); }
         }
     }
 
@@ -526,15 +550,18 @@ void CPU::AND(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
         uint8_t nVal = addressBus_[++PC_];
         registers_[A] &= nVal;
+        clock_ = 8;
         if (debug_) { printf("AND A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             registers_[A] &= addressBus_[getHL()];
+            clock_ = 8;
             if (debug_) { printf("AND A, (HL)\n"); }
         }
         else {
             registers_[A] &= registers_[reg2];
+            clock_ = 4;
             if (debug_) { printf("AND A, %c\n", regNames_[reg2]); }
         }
     }
@@ -551,15 +578,18 @@ void CPU::XOR(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
         uint8_t nVal = addressBus_[++PC_];
         registers_[A] ^= nVal;
+        clock_ = 8;
         if (debug_) { printf("XOR A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             registers_[A] ^= addressBus_[getHL()];
+            clock_ = 8;
             if (debug_) { printf("XOR A, (HL)\n"); }
         }
         else {
             registers_[A] ^= registers_[reg2];
+            clock_ = 4;
             if (debug_) { printf("XOR A, %c\n", regNames_[reg2]); }
         }
     }
@@ -576,15 +606,18 @@ void CPU::OR(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
         uint8_t nVal = addressBus_[++PC_];
         registers_[A] |= nVal;
+        clock_ = 8;
         if (debug_) { printf("OR A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             registers_[A] |= addressBus_[getHL()];
+            clock_ = 8;
             if (debug_) { printf("OR A, (HL)\n"); }
         }
         else {
             registers_[A] |= registers_[reg2];
+            clock_ = 4;
             if (debug_) { printf("OR A, %c\n", regNames_[reg2]); }
         }
     }
@@ -604,15 +637,18 @@ void CPU::CP(uint8_t op, uint8_t reg1, uint8_t reg2) {
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
         nVal = addressBus_[++PC_];
+        clock_ = 8;
         if (debug_) { printf("CP A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
             nVal = addressBus_[getHL()];
+            clock_ = 8;
             if (debug_) { printf("CP A, (HL)\n"); }
         }
         else {
             nVal = registers_[reg2];
+            clock_ = 4;
             if (debug_) { printf("CP A, %c\n", regNames_[reg2]); }
         }
     }
@@ -633,11 +669,13 @@ void CPU::INC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg1 == 0x06) {
         addressBus_[getHL()] += 1;
         result = addressBus_[getHL()];
+        clock_ = 12;
         if (debug_) { printf("INC (HL)\n"); }
     }
     else {
         registers_[reg1] += 1;
         result = registers_[reg1];
+        clock_ = 4;
         if (debug_) { printf("INC %c\n", regNames_[reg1]); }
     }
 
@@ -655,11 +693,13 @@ void CPU::DEC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg1 == 0x06) {
         addressBus_[getHL()] -= 1;
         result = addressBus_[getHL()];
+        clock_ = 12;
         if (debug_) { printf("DEC (HL)\n"); }
     }
     else {
         registers_[reg1] -= 1;
         result = registers_[reg1];
+        clock_ = 4;
         if (debug_) { printf("DEC %c\n", regNames_[reg1]); }
     }
 
@@ -676,13 +716,14 @@ void CPU::ADD_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
         int8_t nVal = addressBus_[++PC_]; // Interpreted as signed value
         uint16_t rVal = SP_;
         SP_ += nVal;
-        
+
         // Calculate if Carry flag needs to be set
         setC(nVal > 0x00 && SP_ < rVal);
         // Calculate if Half-Carry flag needs to be set
         setH(nVal > 0x00 && (SP_ & 0x0F00) < (rVal & 0x0F00));
         // Set Z flag to 0
         setZ(false);
+        clock_ = 16;
         if (debug_) { printf("ADD SP, 0x%02X\n", nVal); }
     }
     else {
@@ -715,6 +756,7 @@ void CPU::ADD_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
         setH((getHL() & 0x0F00) < (rVal & 0x0F00));
         // Set N flag to 0
         setN(false);
+        clock_ = 8;
     }
 }
 
@@ -740,6 +782,7 @@ void CPU::INC_16_BIT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     default:
         break;
     }
+    clock_ = 8;
 }
 
 void CPU::DEC_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
@@ -764,6 +807,7 @@ void CPU::DEC_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
     default:
         break;
     }
+    clock_ = 8;
 }
 
 void CPU::CBPrefix(uint8_t op, uint8_t reg1, uint8_t reg2) {
@@ -788,6 +832,7 @@ void CPU::RLC(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("RLC (HL)\n"); }
     }
     else {
@@ -800,10 +845,12 @@ void CPU::RLC(uint8_t op, uint8_t reg1, uint8_t reg2) {
         // Calculate if Zero flag needs to be set
         if (cbPrefx_) {
             setZ(registers_[reg2] == 0x00);
+            clock_ = 8;
             if (debug_) { printf("RLC %c\n", regNames_[reg2]); }
         }
         else {
             setZ(false);
+            clock_ = 4;
             if (debug_) { printf("RLCA\n"); }
         }
     }
@@ -823,6 +870,7 @@ void CPU::RRC(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("RRC (HL)\n"); }
     }
     else {
@@ -835,10 +883,12 @@ void CPU::RRC(uint8_t op, uint8_t reg1, uint8_t reg2) {
         // Calculate if Zero flag needs to be set
         if (cbPrefx_) {
             setZ(registers_[reg2] == 0x00);
+            clock_ = 8;
             if (debug_) { printf("RRC %c\n", regNames_[reg2]); }
         }
         else {
             setZ(false);
+            clock_ = 4;
             if (debug_) { printf("RRCA\n"); }
         }
     }
@@ -858,6 +908,7 @@ void CPU::RL(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("RL (HL)\n"); }
     }
     else {
@@ -870,10 +921,12 @@ void CPU::RL(uint8_t op, uint8_t reg1, uint8_t reg2) {
         // Calculate if Zero flag needs to be set
         if (cbPrefx_) {
             setZ(registers_[reg2] == 0x00);
+            clock_ = 8;
             if (debug_) { printf("RL %c\n", regNames_[reg2]); }
         }
         else {
             setZ(false);
+            clock_ = 4;
             if (debug_) { printf("RLA\n"); }
         }
     }
@@ -893,6 +946,7 @@ void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("RR (HL)\n"); }
     }
     else {
@@ -905,10 +959,12 @@ void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
         // Calculate if Zero flag needs to be set
         if (cbPrefx_) {
             setZ(registers_[reg2] == 0x00);
+            clock_ = 8;
             if (debug_) { printf("RR %c\n", regNames_[reg2]); }
         }
         else {
             setZ(false);
+            clock_ = 4;
             if (debug_) { printf("RRA\n"); }
         }
     }
@@ -928,6 +984,7 @@ void CPU::SLA(uint8_t op, uint8_t reg1, uint8_t reg2) {
         
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("SLA (HL)\n"); }
     }
     else {
@@ -939,6 +996,7 @@ void CPU::SLA(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(registers_[reg2] == 0x00);
+        clock_ = 8;
         if (debug_) { printf("SLA %c\n", regNames_[reg2]); }
     }
 
@@ -958,6 +1016,7 @@ void CPU::SRA(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("SRA (HL)\n"); }
     }
     else {
@@ -970,6 +1029,7 @@ void CPU::SRA(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(registers_[reg2] == 0x00);
+        clock_ = 8;
         if (debug_) { printf("SRA %c\n", regNames_[reg2]); }
     }
 
@@ -985,6 +1045,7 @@ void CPU::SWAP(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("SWAP (HL)\n"); }
     }
     else {
@@ -993,6 +1054,7 @@ void CPU::SWAP(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(registers_[reg2] == 0x00);
+        clock_ = 8;
         if (debug_) { printf("SWAP %c\n", regNames_[reg2]); }
     }
 
@@ -1012,6 +1074,7 @@ void CPU::SRL(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(addressBus_[getHL()] == 0x00);
+        clock_ = 16;
         if (debug_) { printf("SRA (HL)\n"); }
     }
     else {
@@ -1023,6 +1086,7 @@ void CPU::SRL(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
         // Calculate if Zero flag needs to be set
         setZ(registers_[reg2] == 0x00);
+        clock_ = 8;
         if (debug_) { printf("SRA %c\n", regNames_[reg2]); }
     }
 
@@ -1037,11 +1101,13 @@ void CPU::BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
         // Calculate if Zero flag needs to be set
         setZ((addressBus_[getHL()] & mask) == 0);
+        clock_ = 12;
         if (debug_) { printf("BIT %d, (HL)\n", reg1); }
     }
     else {
         // Calculate if Zero flag needs to be set
         setZ((registers_[reg2] & mask) == 0);
+        clock_ = 8;
         if (debug_) { printf("BIT %d, %c\n", reg1, regNames_[reg2]); }
     }
 
@@ -1055,10 +1121,12 @@ void CPU::RES(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     if (reg2 == 0x06) {
         addressBus_[getHL()] &= mask;
+        clock_ = 16;
         if (debug_) { printf("RES %d, (HL)\n", reg1); }
     }
     else {
         registers_[reg2] &= mask;
+        clock_ = 8;
         if (debug_) { printf("RES %d, %c\n", reg1, regNames_[reg2]); }
     }
 }
@@ -1068,10 +1136,12 @@ void CPU::SET(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     if (reg2 == 0x06) {
         addressBus_[getHL()] |= mask;
+        clock_ = 16;
         if (debug_) { printf("SET %d, (HL)\n", reg1); }
     }
     else {
         registers_[reg2] |= mask;
+        clock_ = 8;
         if (debug_) { printf("SET %d, %c\n", reg1, regNames_[reg2]); }
     }
 }
@@ -1079,6 +1149,7 @@ void CPU::SET(uint8_t op, uint8_t reg1, uint8_t reg2) {
 void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t lAddr = addressBus_[++PC_];
     uint8_t hAddr = addressBus_[++PC_];
+    clock_ = 12;
 
     if (reg2 == 0x04) {
         switch (reg1)
@@ -1110,10 +1181,12 @@ void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     addressBus_[--SP_] = 0x00FF & PC_;
     addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
     PC_ = (hAddr << 8) + lAddr - 1;
+    clock_ = 24;
 }
 
 void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x00) {
+        clock_ = 8;
         switch (reg1)
         {
         case 0x00:
@@ -1135,6 +1208,7 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         default:
             break;
         }
+        clock_ = 20;
     }
     else {
         if (reg1 == 0x03) {
@@ -1144,6 +1218,7 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         else {
             if (debug_) { printf("RET\n"); }
         }
+        clock_ = 16;
     }
 
     uint8_t hAddr = addressBus_[SP_++];
@@ -1154,48 +1229,62 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
 void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     //setC(true);
+    clock_ = 16;
     if (debug_) { printf("RST\n"); }
 }
 
 void CPU::DAA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     //setC(true);
+    clock_ = 4;
     if (debug_) { printf("CCF\n"); }
 }
 
 void CPU::CPL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     registers_[A] = !registers_[A];
+    clock_ = 4;
     if (debug_) { printf("CPL\n"); }
 }
 
 void CPU::SCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setC(true);
+    clock_ = 4;
     if (debug_) { printf("SCF\n"); }
 }
 
 void CPU::CCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     setC(!getC());
+    clock_ = 4;
     if (debug_) { printf("CCF\n"); }
 }
 
 void CPU::DI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     IME_ = false;
+    clock_ = 4;
     if (debug_) { printf("DI\n"); }
 }
 
 void CPU::EI(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     IME_ = true;
+    clock_ = 4;
     if (debug_) { printf("EI\n"); }
 }
 
 void CPU::HALT(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     isHalted_ = true;
+    clock_ = 4;
     if (debug_) { printf("HALT\n"); }
 }
 
-
 void CPU::STOP(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     // IME = true;
+    clock_ = 4;
     if (debug_) { printf("STOP\n"); }
+}
+
+void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    instruction = (instruction << 6) + (reg1 << 3) + reg2;
+    clock_ = 4;
+    if (debug_) { printf("NOP 0x%02X\n", instruction); }
 }
 
 
@@ -1206,10 +1295,6 @@ void CPU::printRegs() {
         PC_ + 1, SP_);
 }
 
-void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    instruction = (instruction << 6) + (reg1 << 3) + reg2;
-    if (debug_) { printf("NOP 0x%02X\n", instruction); }
-}
 
 uint16_t CPU::getAF() {
     return (registers_[A] << 8) + registers_[F];

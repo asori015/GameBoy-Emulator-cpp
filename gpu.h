@@ -43,6 +43,7 @@ private:
     const uint8_t* const WX; // Window Y-Coordinate
     uint8_t windowLineCounter_;
     const uint16_t colorValues[4] = { 0xFFFF, 0x56B5, 0x294A, 0x0000 };
+    uint8_t bgDotVals[160];
 
     int state_;
     int clock_;

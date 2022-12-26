@@ -149,18 +149,21 @@ void GPU::renderBackgroundLine() {
         if (hBits & mask) {
             if (lBits & mask) {
                 color = colorValues[(*BGP & 0xC0) >> 6];
+                bgDotVals[i] = 3;
             }
             else {
                 color = colorValues[(*BGP & 0x30) >> 4];
+                bgDotVals[i] = 2;
             }
         }
         else {
             if (lBits & mask) {
                 color = colorValues[(*BGP & 0x0C) >> 2];
+                bgDotVals[i] = 1;
             }
             else {
                 color = colorValues[(*BGP & 0x03)];
-                
+                bgDotVals[i] = 0;
             }
         }
 
@@ -191,18 +194,21 @@ void GPU::renderWindowLine() {
             if (hBits & mask) {
                 if (lBits & mask) {
                     color = colorValues[(*BGP & 0xC0) >> 6];
+                    bgDotVals[i] = 3;
                 }
                 else {
                     color = colorValues[(*BGP & 0x30) >> 4];
+                    bgDotVals[i] = 2;
                 }
             }
             else {
                 if (lBits & mask) {
                     color = colorValues[(*BGP & 0x0C) >> 2];
+                    bgDotVals[i] = 1;
                 }
                 else {
                     color = colorValues[(*BGP & 0x03)];
-
+                    bgDotVals[i] = 0;
                 }
             }
 
@@ -219,20 +225,38 @@ void GPU::renderObjectLine() {
     for (int i = 0; i < 40; i++) {
         int y = *(OAM + (i * 4)) - *LY;
         int x = *(OAM + (i * 4) + 1) - 8;
-        const uint8_t* VRAM_Pointer = VRAM_1 + (*(OAM + (i * 4) + 2) * 16);
+        uint8_t attributes = *(OAM + (i * 4) + 3);
+        const uint8_t* VRAM_Pointer;
 
         if (*LCDC & 0x04) {
             if (y < 1 || y > 16) {
                 continue;
+            }
+            if (y < 9) {
+                if (attributes & 0x40) {
+                    VRAM_Pointer = VRAM_1 + ((*(OAM + (i * 4) + 2) & 0xFE) * 16);
+                }
+                else {
+                    VRAM_Pointer = VRAM_1 + ((*(OAM + (i * 4) + 2) | 0x01) * 16);
+                }
+            }
+            else {
+                if (attributes & 0x40) {
+                    VRAM_Pointer = VRAM_1 + ((*(OAM + (i * 4) + 2) | 0x01) * 16);
+                }
+                else {
+                    VRAM_Pointer = VRAM_1 + ((*(OAM + (i * 4) + 2) & 0xFE) * 16);
+                }
             }
         }
         else {
             if (y < 9 || y > 16) {
                 continue;
             }
+            VRAM_Pointer = VRAM_1 + (*(OAM + (i * 4) + 2) * 16);
         }
 
-        uint8_t attributes = *(OAM + (i * 4) + 3);
+        
         if (attributes & 0x40) {
             y = y - 1;
         }
@@ -263,24 +287,44 @@ void GPU::renderObjectLine() {
                     pallete = OBP0;
                 }
 
+                //uint8_t colorIndex = 0;
+
                 if (hBits & mask) {
                     if (lBits & mask) {
                         color = colorValues[(*pallete & 0xC0) >> 6];
+                        //color = 0x7C00;
                     }
                     else {
                         color = colorValues[(*pallete & 0x30) >> 4];
+                        //color = 0x03E0;
                     }
                 }
                 else {
                     if (lBits & mask) {
                         color = colorValues[(*pallete & 0x0C) >> 2];
+                        //color = 0x7FE0;
                     }
                     else {
-                        color = colorValues[(*pallete & 0x03)];
+                        if (attributes & 0x20) {
+                            mask = mask << 1;
+                        }
+                        else {
+                            mask = mask >> 1;
+                        }
+                        x++;
+                        continue;
+                        //color = 0x7C1F;
+                        //color = colorValues[(*pallete & 0x03)];
                     }
                 }
-
-                frame_[(*LY * 160) + x] = color;
+                if ((attributes & 0x80)) {
+                    if (bgDotVals[x] == 0) {
+                        frame_[(*LY * 160) + x] = color;
+                    }
+                }
+                else {
+                    frame_[(*LY * 160) + x] = color;
+                }
             }
 
             if (attributes & 0x20) {

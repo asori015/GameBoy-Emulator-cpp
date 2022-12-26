@@ -16,6 +16,7 @@ public:
     void loadGameROM(std::string);
     void step();
     void execute(uint8_t);
+    void checkForInterupts();
     void printRegs();
 
     // Getter Functions for Register
