@@ -30,10 +30,10 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
-    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
+    //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    //filePath = "D:\\Games\\GBA\\01-special.gb";
-    //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
+    filePath = "D:\\Games\\GBA\\01-special.gb";
+    //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
     std::ifstream gameFile(filePath, std::ios::binary);
     gameFile.read((char*)(addressBus_), 0x7FFF);
     gameFile.close();
@@ -71,6 +71,19 @@ void CPU::execute(uint8_t instruction) {
         loadGameROM("");
         //debug_ = true;
     }
+
+    //if (PC_ == 0xC7F9) {
+    //    //debug_ = true;
+    //}
+
+    if (PC_ == 0xC000) {
+        debug_ = true;
+    }
+
+    /*if (addressBus_[0xFF02] != 0) {
+        printf("SB: 0x%x\n", addressBus_[0xFF01]);
+        printf("SC: 0x%x\n", addressBus_[0xFF02]);
+    }*/
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
@@ -1177,9 +1190,9 @@ void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     else {
         if (debug_) { printf("CALL 0x%02X%02X\n", hAddr, lAddr); }
     }
-
-    addressBus_[--SP_] = 0x00FF & PC_;
+    PC_ += 1;
     addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+    addressBus_[--SP_] = 0x00FF & PC_;
     PC_ = (hAddr << 8) + lAddr - 1;
     clock_ = 24;
 }
@@ -1221,10 +1234,10 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         clock_ = 16;
     }
 
-    uint8_t hAddr = addressBus_[SP_++];
     uint8_t lAddr = addressBus_[SP_++];
+    uint8_t hAddr = addressBus_[SP_++];
 
-    PC_ = (hAddr << 8) + lAddr;
+    PC_ = (hAddr << 8) + lAddr - 1;
 }
 
 void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
