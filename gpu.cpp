@@ -62,7 +62,7 @@ void GPU::step() {
                     *STAT |= 0x02;
                     *LY = 0;
                     if (*STAT & 0x20) { *IF |= 0x02; } // Check if STAT interupt enable, request interupt
-                    //printf("1 ");
+                    printf("1 ");
                 }
                 clock_ = -1;
             }

@@ -30,10 +30,19 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
-    //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
+    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    filePath = "D:\\Games\\GBA\\01-special.gb";
+    //filePath = "D:\\Games\\GBA\\01-special.gb";
+    //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
+    //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
+    //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
+    //filePath = "D:\\Games\\GBA\\05-op rp.gb";
+    //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
+    //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
+    //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
+    //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
     //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
+    //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
     std::ifstream gameFile(filePath, std::ios::binary);
     gameFile.read((char*)(addressBus_), 0x7FFF);
     gameFile.close();
@@ -77,7 +86,7 @@ void CPU::execute(uint8_t instruction) {
     //}
 
     if (PC_ == 0xC000) {
-        debug_ = true;
+       // debug_ = true;
     }
 
     /*if (addressBus_[0xFF02] != 0) {
@@ -94,7 +103,7 @@ void CPU::execute(uint8_t instruction) {
 }
 
 void CPU::checkForInterupts() {
-    if (addressBus_[0xFF0F]) {
+    if (addressBus_[0xFF0F]) { // Interupt Request flag
         uint8_t mask = 0x01;
         for (int i = 0; i < 5; i++) {
             if ((addressBus_[0xFF0F] & mask) && (addressBus_[0xFFFF] & mask)) {
@@ -103,8 +112,9 @@ void CPU::checkForInterupts() {
                 if (IME_) {
                     IME_ = false;
                     addressBus_[0xFF0F] &= !mask;
-                    addressBus_[--SP_] = 0x00FF & PC_;
+                    PC_ += 1;
                     addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+                    addressBus_[--SP_] = 0x00FF & PC_;
                     PC_ = 0x0040 + (8 * i);
                     clock_ += 4;
                 }
