@@ -30,11 +30,11 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
-    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
+    //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
     //filePath = "D:\\Games\\GBA\\01-special.gb";
     //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
-    //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
+    filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
     //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
@@ -81,12 +81,16 @@ void CPU::execute(uint8_t instruction) {
         //debug_ = true;
     }
 
-    //if (PC_ == 0xC7F9) {
-    //    //debug_ = true;
-    //}
+    /*if (PC_ == 0xC000) {
+        debug_ = true;
+    }*/
 
-    if (PC_ == 0xC000) {
-       // debug_ = true;
+    if (PC_ == 0xC63F) {
+        debug_ = true;
+    }
+
+    if (PC_ == 0xDEFB) {
+        debug_ = false;
     }
 
     /*if (addressBus_[0xFF02] != 0) {
@@ -313,7 +317,6 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
         }
         else {
             int8_t val;
-            uint16_t result;
             switch (reg1)
             {
             case 0x00:
@@ -342,19 +345,19 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
                 break;
             case 0x07:
                 val = addressBus_[++PC_];
-                result = SP_ + val;
-                setHL(result);
+                setHL(SP_ + val);
 
-                // Calculate if Carry flag needs to be set
-                setC(val > 0 && result < SP_);
-                // Calculate if Half-Carry flag needs to be set
-                setH(val > 0 && (result & 0x0FFF) < (SP_ & 0xFFF));
-                // Set N and Z flags to 0
-                setN(false);
+                // Set Z flag to 0
                 setZ(false);
+                // Set N flag to 0
+                setN(false);
+                // Calculate if Half-Carry flag needs to be set
+                setH(((SP_ ^ getHL() ^ val) & 0x0010) == 0x0010);
+                // Calculate if Carry flag needs to be set
+                setC(((SP_ ^ getHL() ^ val) & 0x0100) == 0x0100);
 
                 clock_ = 12;
-                if (debug_) { printf("HL, SP+%d\n", val); }
+                if (debug_) { printf("HL, SP +%d\n", val); }
                 break;
             default:
                 break;
@@ -542,7 +545,7 @@ void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
         nVal = addressBus_[++PC_];
         clock_ = 8;
-        if (debug_) { printf("A, 0x % 02X\n", nVal); }
+        if (debug_) { printf("A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
@@ -740,14 +743,17 @@ void CPU::ADD_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
         uint16_t rVal = SP_;
         SP_ += nVal;
 
-        // Calculate if Carry flag needs to be set
-        setC(nVal > 0x00 && SP_ < rVal);
-        // Calculate if Half-Carry flag needs to be set
-        setH(nVal > 0x00 && (SP_ & 0x0F00) < (rVal & 0x0F00));
         // Set Z flag to 0
         setZ(false);
+        // Set N flag to 0
+        setN(false);
+        // Calculate if Half-Carry flag needs to be set
+        setH(((SP_ ^ rVal ^ nVal) & 0x0010) == 0x0010);
+        // Calculate if Carry flag needs to be set
+        setC(((SP_ ^ rVal ^ nVal) & 0x0100) == 0x0100);
+        
         clock_ = 16;
-        if (debug_) { printf("ADD SP, 0x%02X\n", nVal); }
+        if (debug_) { printf("ADD SP, %d\n", nVal); }
     }
     else {
         uint16_t rVal = getHL();
@@ -766,19 +772,20 @@ void CPU::ADD_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
             if (debug_) { printf("ADD HL, HL\n"); }
             break;
         case 0x07:
-            setHL(getHL() + getSP());
+            setHL(getHL() + SP_);
             if (debug_) { printf("ADD HL, SP\n"); }
             break;
         default:
             break;
         }
 
-        // Calculate if Carry flag needs to be set
-        setC(getHL() < rVal);
-        // Calculate if Half-Carry flag needs to be set
-        setH((getHL() & 0x0F00) < (rVal & 0x0F00));
         // Set N flag to 0
         setN(false);
+        // Calculate if Half-Carry flag needs to be set
+        setH((getHL() & 0x0FFF) < (rVal & 0x0FFF));
+        // Calculate if Carry flag needs to be set
+        setC(getHL() < rVal);
+        
         clock_ = 8;
     }
 }
@@ -1257,9 +1264,111 @@ void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::DAA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    //setC(true);
+    if (getN()) {
+        // SUB & SBC
+        if (getC()) {
+            if (getH()) {
+                if ((registers_[A] & 0xF0) > 0x50) {
+                    if ((registers_[A] & 0x0F) > 0x05) {
+                        registers_[A] += 0x9A;
+                        setC(true);
+                    }
+                }
+            }
+            else {
+                if ((registers_[A] & 0xF0) > 0x60) {
+                    if ((registers_[A] & 0x0F) < 0x0A) {
+                        registers_[A] += 0xA0;
+                        setC(true);
+                    }
+                }
+            }
+        }
+        else {
+            if (getH()) {
+                if ((registers_[A] & 0xF0) < 0x90) {
+                    if ((registers_[A] & 0x0F) > 0x05) {
+                        registers_[A] += 0xFA;
+                        setC(false);
+                    }
+                }
+            }
+            else {
+                if ((registers_[A] & 0xF0) < 0xA0) {
+                    if ((registers_[A] & 0x0F) < 0x0A) {
+                        registers_[A] += 0x00;
+                        setC(false);
+                    }
+                }
+            }
+        }
+    }
+    else {
+        // ADD & ADC
+        if (getC()) {
+            if (getH()) {
+                if ((registers_[A] & 0xF0) < 0x40) {
+                    if ((registers_[A] & 0x0F) < 0x04) {
+                        registers_[A] += 0x66;
+                        setC(true);
+                    }
+                }
+            }
+            else {
+                if ((registers_[A] & 0xF0) < 0x30) {
+                    if ((registers_[A] & 0x0F) < 0x0A) {
+                        registers_[A] += 0x60;
+                    }
+                    else {
+                        registers_[A] += 0x66;
+                    }
+                }
+                setC(true);
+            }
+        }
+        else {
+            if (getH()) {
+                if ((registers_[A] & 0x0F) < 0x04) {
+                    if ((registers_[A] & 0xF0) < 0xA0) {
+                        registers_[A] += 0x06;
+                        setC(false);
+                    }
+                    else {
+                        registers_[A] += 0x66;
+                        setC(true);
+                    }
+                }
+            }
+            else {
+                if ((registers_[A] & 0x0F) < 0x0A) {
+                    if ((registers_[A] & 0xF0) < 0xA0) {
+                        registers_[A] += 0x00;
+                        setC(false);
+                    }
+                    else {
+                        registers_[A] += 0x60;
+                        setC(true);
+                    }
+                }
+                else {
+                    if ((registers_[A] & 0xF0) < 0x90) {
+                        registers_[A] += 0x06;
+                        setC(false);
+                    }
+                    else {
+                        registers_[A] += 0x66;
+                        setC(true);
+                    }
+                }
+            }
+        }
+    }
+
+    setZ(registers_[A] == 0);
+    setH(false);
+
     clock_ = 4;
-    if (debug_) { printf("CCF\n"); }
+    if (debug_) { printf("DAA\n"); }
 }
 
 void CPU::CPL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
@@ -1312,9 +1421,10 @@ void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 
 
 void CPU::printRegs() {
-    printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nPC: 0x%04X\nSP: 0x%04X\n\n", 
+    printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nZ: %d N: %d H: %d C: %d\nPC: 0x%04X\nSP: 0x%04X\n\n", 
         registers_[A], registers_[F], registers_[B], registers_[C],
         registers_[D], registers_[E], registers_[H], registers_[L],
+        getZ(), getN(), getH(), getC(),
         PC_ + 1, SP_);
 }
 
@@ -1345,7 +1455,7 @@ uint16_t CPU::getPC() {
 
 void CPU::setAF(uint8_t hVal, uint8_t lVal) {
     registers_[A] = hVal;
-    registers_[F] = lVal;
+    registers_[F] = lVal & 0xF0;
 }
 
 void CPU::setBC(uint8_t hVal, uint8_t lVal) {
