@@ -5,7 +5,13 @@
 
 //typedef void (CPU::* functionPointer)(uint8_t );
 
-CPU::CPU(Machine* machine, uint8_t* addressBus) {
+CPU::CPU(Machine* machine, uint8_t* addressBus) :
+    DIV((uint16_t*)&addressBus[0xFF03]),
+    TIMA(&addressBus[0xFF05]),
+    TMA(&addressBus[0xFF06]),
+    TAC(&addressBus[0xFF07]),
+    IF(&addressBus[0xFF0F])
+{
     this->machine_ = machine;
     this->PC_ = 0;
     this->SP_ = 0;
@@ -33,14 +39,14 @@ void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
     //filePath = "D:\\Games\\GBA\\01-special.gb";
-    //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
+    filePath = "D:\\Games\\GBA\\02-interrupts.gb";
     //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
     //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
     //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
     //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
-    filePath = "D:\\Games\\GBA\\09-op r,r.gb";
+    //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
     //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
     //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
     std::ifstream gameFile(filePath, std::ios::binary);
@@ -65,6 +71,7 @@ void CPU::run() {
 }
 
 void CPU::step() {
+    updateTimer();
     checkForInterupts();
 
     if(!isHalted_) {
@@ -81,9 +88,9 @@ void CPU::execute(uint8_t instruction) {
         //debug_ = true;
     }
 
-    /*if (PC_ == 0xC000) {
+    if (PC_ == 0xC319) {
         debug_ = true;
-    }*/
+    }
 
     /*if (PC_ == 0xC63F) {
         debug_ = true;
@@ -93,17 +100,49 @@ void CPU::execute(uint8_t instruction) {
         debug_ = false;
     }*/
 
-    /*if (addressBus_[0xFF02] != 0) {
-        printf("SB: 0x%x\n", addressBus_[0xFF01]);
-        printf("SC: 0x%x\n", addressBus_[0xFF02]);
-    }*/
-
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
     (this->*instructionMethods1_[instruction])(opcode, register1, register2);
     if (debug_) { printf("Instruction: 0x%x\n", instruction); printRegs(); }
     PC_ += 1;
+}
+
+void CPU::updateTimer() {
+    *DIV += 1;
+    if (*TAC & 0x04) {
+        uint16_t sum = *TIMA;
+        if (*TAC & 0x03) {
+            if (*DIV & (0x0004 << (*TAC & 0x03))) {
+                fallingEdgeDelay_ = true;
+            }
+            else {
+                if (fallingEdgeDelay_) {
+                    sum += 1;
+                    fallingEdgeDelay_ = false;
+                }
+            }
+        }
+        else {
+            if (*DIV & 0x0200) {
+                fallingEdgeDelay_ = true;
+            }
+            else {
+                if (fallingEdgeDelay_) {
+                    sum += 1;
+                    fallingEdgeDelay_ = false;
+                }
+            }
+        }
+
+        if (sum > 0x00FF) {
+            *TIMA = *TMA;
+            *IF |= 0x04;
+        }
+        else {
+            *TIMA = sum;
+        }
+    }
 }
 
 void CPU::checkForInterupts() {
@@ -116,7 +155,6 @@ void CPU::checkForInterupts() {
                 if (IME_) {
                     IME_ = false;
                     addressBus_[0xFF0F] &= !mask;
-                    PC_ += 1;
                     addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
                     addressBus_[--SP_] = 0x00FF & PC_;
                     PC_ = 0x0040 + (8 * i);
@@ -125,7 +163,6 @@ void CPU::checkForInterupts() {
                 break;
             }
             mask = mask << 1;
-
         }
     }
 }
@@ -1207,6 +1244,7 @@ void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     else {
         if (debug_) { printf("CALL 0x%02X%02X\n", hAddr, lAddr); }
     }
+
     PC_ += 1;
     addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
     addressBus_[--SP_] = 0x00FF & PC_;

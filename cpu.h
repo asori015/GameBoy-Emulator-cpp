@@ -16,6 +16,7 @@ public:
     void loadGameROM(std::string);
     void step();
     void execute(uint8_t);
+    void updateTimer();
     void checkForInterupts();
     void printRegs();
 
@@ -115,9 +116,17 @@ private:
     uint16_t PC_;
     uint16_t SP_;
     int clock_;
+    uint16_t* const DIV;
+    uint8_t* const TIMA;
+    const uint8_t* const TMA;
+    const uint8_t* const TAC;
+    uint8_t* const IF;
+
     bool IME_ = false;
     bool cbPrefx_ = false;
     bool isHalted_ = false;
+    bool fallingEdgeDelay_ = false;
+
     // Only for debug print statements
     bool debug_ = false;
     const char regNames_[8] = {'B', 'C', 'D', 'E', 'H', 'L', 'F', 'A'};
