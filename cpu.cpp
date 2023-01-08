@@ -32,10 +32,10 @@ void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
     //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    filePath = "D:\\Games\\GBA\\01-special.gb";
+    //filePath = "D:\\Games\\GBA\\01-special.gb";
     //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
     //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
-    //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
+    filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
     //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
     //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
@@ -515,16 +515,16 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
         }
     }
 
-    // Calculate if Half-Carry flag needs to be set
-    setH(((nVal & 0x0F) + (rVal & 0x0F) + carry) > 0x0F);
     // Perform addition to A register
     registers_[A] += nVal + carry;
-    // Calculate if Full-Carry flag needs to be set
-    setC((registers_[A] < rVal));
     // Calculate if Zero flag needs to be set
     setZ(registers_[A] == 0);
     // Set N flag to 0
     setN(false);
+    // Calculate if Half-Carry flag needs to be set
+    setH(((rVal & 0x0F) + (nVal & 0x0F) + carry) > 0x0F);
+    // Calculate if Full-Carry flag needs to be set
+    setC((rVal + nVal + carry) > 0xFF);
 }
 
 void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
@@ -680,7 +680,7 @@ void CPU::CP(uint8_t op, uint8_t reg1, uint8_t reg2) {
     }
 
     // Calculate if Half-Carry flag needs to be set
-    setH(nVal < rVal);
+    setH(((rVal - nVal) & 0x0F) > (rVal & 0x0F));
     // Calculate if Full-Carry flag needs to be set
     setC(nVal > rVal);
     // Calculate if Zero flag needs to be set
