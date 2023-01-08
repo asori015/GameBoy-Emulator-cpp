@@ -35,10 +35,10 @@ void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\01-special.gb";
     //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
     //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
-    filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
+    //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
     //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
-    //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
+    filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
     //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
     //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
     //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
@@ -1258,7 +1258,11 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    //setC(true);
+    PC_ += 1;
+    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
+    addressBus_[--SP_] = 0x00FF & PC_;
+    PC_ = (reg1 * 8) - 1;
+
     clock_ = 16;
     if (debug_) { printf("RST\n"); }
 }
