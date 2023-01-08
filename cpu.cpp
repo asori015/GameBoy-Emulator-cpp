@@ -38,9 +38,9 @@ void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
     //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
-    filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
+    //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
     //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
-    //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
+    filePath = "D:\\Games\\GBA\\09-op r,r.gb";
     //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
     //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
     std::ifstream gameFile(filePath, std::ios::binary);
@@ -1299,18 +1299,35 @@ void CPU::DAA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::CPL(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    registers_[A] = !registers_[A];
+    registers_[A] = 0xFF - registers_[A];
+
+    // Set N flag to 1
+    setN(true);
+    // Set H flag to 1
+    setH(true);
+
     clock_ = 4;
     if (debug_) { printf("CPL\n"); }
 }
 
 void CPU::SCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    // Set N flag to 0
+    setN(false);
+    // Set H flag to 0
+    setH(false);
+    // Set C flag to 1
     setC(true);
+
     clock_ = 4;
     if (debug_) { printf("SCF\n"); }
 }
 
 void CPU::CCF(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
+    // Set N flag to 0
+    setN(false);
+    // Set H flag to 0
+    setH(false);
+    // Set C flag to !C
     setC(!getC());
     clock_ = 4;
     if (debug_) { printf("CCF\n"); }
