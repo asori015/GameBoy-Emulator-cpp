@@ -32,9 +32,9 @@ void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
     //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    //filePath = "D:\\Games\\GBA\\01-special.gb";
+    filePath = "D:\\Games\\GBA\\01-special.gb";
     //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
-    filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
+    //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
     //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
@@ -85,13 +85,13 @@ void CPU::execute(uint8_t instruction) {
         debug_ = true;
     }*/
 
-    if (PC_ == 0xC63F) {
+    /*if (PC_ == 0xC63F) {
         debug_ = true;
     }
 
     if (PC_ == 0xDEFB) {
         debug_ = false;
-    }
+    }*/
 
     /*if (addressBus_[0xFF02] != 0) {
         printf("SB: 0x%x\n", addressBus_[0xFF01]);
@@ -1264,107 +1264,30 @@ void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::DAA(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    if (getN()) {
-        // SUB & SBC
-        if (getC()) {
-            if (getH()) {
-                if ((registers_[A] & 0xF0) > 0x50) {
-                    if ((registers_[A] & 0x0F) > 0x05) {
-                        registers_[A] += 0x9A;
-                        setC(true);
-                    }
-                }
-            }
-            else {
-                if ((registers_[A] & 0xF0) > 0x60) {
-                    if ((registers_[A] & 0x0F) < 0x0A) {
-                        registers_[A] += 0xA0;
-                        setC(true);
-                    }
-                }
-            }
+    if (!getN()) {
+        if (getC() || registers_[A] > 0x99) {
+            registers_[A] += 0x60;
+            setC(true);
         }
-        else {
-            if (getH()) {
-                if ((registers_[A] & 0xF0) < 0x90) {
-                    if ((registers_[A] & 0x0F) > 0x05) {
-                        registers_[A] += 0xFA;
-                        setC(false);
-                    }
-                }
-            }
-            else {
-                if ((registers_[A] & 0xF0) < 0xA0) {
-                    if ((registers_[A] & 0x0F) < 0x0A) {
-                        registers_[A] += 0x00;
-                        setC(false);
-                    }
-                }
-            }
+        if (getH() || (registers_[A] & 0x0F) > 0x09) {
+            registers_[A] += 0x06;
         }
     }
-    else {
-        // ADD & ADC
-        if (getC()) {
-            if (getH()) {
-                if ((registers_[A] & 0xF0) < 0x40) {
-                    if ((registers_[A] & 0x0F) < 0x04) {
-                        registers_[A] += 0x66;
-                        setC(true);
-                    }
-                }
-            }
-            else {
-                if ((registers_[A] & 0xF0) < 0x30) {
-                    if ((registers_[A] & 0x0F) < 0x0A) {
-                        registers_[A] += 0x60;
-                    }
-                    else {
-                        registers_[A] += 0x66;
-                    }
-                }
-                setC(true);
-            }
+    else if (getC()) {
+        if (getH()) {
+            registers_[A] += 0x9A;
         }
         else {
-            if (getH()) {
-                if ((registers_[A] & 0x0F) < 0x04) {
-                    if ((registers_[A] & 0xF0) < 0xA0) {
-                        registers_[A] += 0x06;
-                        setC(false);
-                    }
-                    else {
-                        registers_[A] += 0x66;
-                        setC(true);
-                    }
-                }
-            }
-            else {
-                if ((registers_[A] & 0x0F) < 0x0A) {
-                    if ((registers_[A] & 0xF0) < 0xA0) {
-                        registers_[A] += 0x00;
-                        setC(false);
-                    }
-                    else {
-                        registers_[A] += 0x60;
-                        setC(true);
-                    }
-                }
-                else {
-                    if ((registers_[A] & 0xF0) < 0x90) {
-                        registers_[A] += 0x06;
-                        setC(false);
-                    }
-                    else {
-                        registers_[A] += 0x66;
-                        setC(true);
-                    }
-                }
-            }
+            registers_[A] += 0xA0;
         }
+    }
+    else if (getH()) {
+        registers_[A] += 0xFA;
     }
 
+    // Calculate if Zero flag needs to be set
     setZ(registers_[A] == 0);
+    // Set Half-Carry flag to 0
     setH(false);
 
     clock_ = 4;
@@ -1419,7 +1342,6 @@ void CPU::nop(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     if (debug_) { printf("NOP 0x%02X\n", instruction); }
 }
 
-
 void CPU::printRegs() {
     printf("REGS: \nA: 0x%02X F: 0x%02X\nB: 0x%02X C: 0x%02X\nD: 0x%02X E: 0x%02X\nH: 0x%02X L: 0x%02X\nZ: %d N: %d H: %d C: %d\nPC: 0x%04X\nSP: 0x%04X\n\n", 
         registers_[A], registers_[F], registers_[B], registers_[C],
@@ -1427,7 +1349,6 @@ void CPU::printRegs() {
         getZ(), getN(), getH(), getC(),
         PC_ + 1, SP_);
 }
-
 
 uint16_t CPU::getAF() {
     return (registers_[A] << 8) + registers_[F];
