@@ -35,11 +35,11 @@ void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 
 void CPU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
-    //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
+    filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
     //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
     //filePath = "D:\\Games\\GBA\\01-special.gb";
-    filePath = "D:\\Games\\GBA\\02-interrupts.gb";
+    //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
     //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
     //filePath = "D:\\Games\\GBA\\05-op rp.gb";
@@ -54,23 +54,8 @@ void CPU::loadGameROM(std::string filePath) {
     gameFile.close();
 }
 
-// This function is temporary, step function should be called by the Machine class
-// Function Deprecated...
-void CPU::run() {
-    debug_ = false;
-    while (this->PC_ != 0x0068) {
-        step();
-    }
-
-    //debug_ = true;
-    //int x = 0; // Temporary set up, this loop should be infinite
-    //while (x < 32) {
-    //    step();
-    //    x++;
-    //}
-}
-
 void CPU::step() {
+    addressBus_[0xFF00] |= 0x0F;
     updateTimer();
     checkForInterupts();
 
@@ -85,20 +70,7 @@ void CPU::step() {
 void CPU::execute(uint8_t instruction) {
     if (PC_ == 0x0100) {
         loadGameROM("");
-        //debug_ = true;
     }
-
-    if (PC_ == 0xC319) {
-        debug_ = true;
-    }
-
-    /*if (PC_ == 0xC63F) {
-        debug_ = true;
-    }
-
-    if (PC_ == 0xDEFB) {
-        debug_ = false;
-    }*/
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
@@ -113,7 +85,7 @@ void CPU::updateTimer() {
     if (*TAC & 0x04) {
         uint16_t sum = *TIMA;
         if (*TAC & 0x03) {
-            if (*DIV & (0x0004 << (*TAC & 0x03))) {
+            if (*DIV & (0x0002 << ((*TAC & 0x03) * 2))) {
                 fallingEdgeDelay_ = true;
             }
             else {
@@ -140,7 +112,7 @@ void CPU::updateTimer() {
             *IF |= 0x04;
         }
         else {
-            *TIMA = sum;
+            *TIMA = sum & 0x00FF;
         }
     }
 }
@@ -194,7 +166,12 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1) {
             case 0x04:
                 address = 0xFF00 + addressBus_[++PC_];
-                addressBus_[address] = registers_[A];
+                if (address == 0xFF00) {
+                    addressBus_[address] = registers_[A] & 0x30;
+                }
+                else {
+                    addressBus_[address] = registers_[A];
+                }
                 clock_ = 12;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;

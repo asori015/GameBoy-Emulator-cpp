@@ -46,8 +46,6 @@ private:
         L = 5
     };
 
-    void run(); // Temporary
-
     // OpCode implementation functions
     void nop(uint8_t, uint8_t, uint8_t);
     void LD_R_to_R(uint8_t, uint8_t, uint8_t);
