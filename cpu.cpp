@@ -2,6 +2,7 @@
 #include <fstream>
 #include "cpu.h"
 #include "bootroms.h"
+#include <Windows.h>
 
 //typedef void (CPU::* functionPointer)(uint8_t );
 
@@ -20,8 +21,8 @@ CPU::CPU(Machine* machine, uint8_t* addressBus) :
     //this->debug_ = true;
     this->addressBus_ = addressBus;
     this->loadGameROM("");
-    this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
-    //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
+    //this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
+    this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
     //this->run();
 
     //this->step();
@@ -55,7 +56,21 @@ void CPU::loadGameROM(std::string filePath) {
 }
 
 void CPU::step() {
-    addressBus_[0xFF00] |= 0x0F;
+    if (!(addressBus_[0xFF00] & 0x10)) {
+        addressBus_[0xFF00] |= jstate1;
+    }
+    else {
+        addressBus_[0xFF00] |= jstate2;
+    }
+    
+    if (clock == 0) {
+        getInput();
+        clock = 1000;
+    }
+    else {
+        clock -= 1;
+    }
+
     updateTimer();
     checkForInterupts();
 
@@ -67,10 +82,108 @@ void CPU::step() {
     }
 }
 
-void CPU::execute(uint8_t instruction) {
-    if (PC_ == 0x0100) {
-        loadGameROM("");
+void CPU::getInput() {
+    if (GetKeyState(VK_RIGHT) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate1 &= 0xFE;
     }
+    else {
+        if (!(jstate1 & 0x01)) {
+            *IF |= 0x10;
+        }
+        jstate1 |= 0x01;
+    }
+    if (GetKeyState(VK_LEFT) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate1 &= 0xFD;
+    }
+    else {
+        if (!(jstate1 & 0x02)) {
+            *IF |= 0x10;
+        }
+        jstate1 |= 0x02;
+    }
+    if (GetKeyState(VK_UP) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate1 &= 0xFB;
+    }
+    else {
+        if (!(jstate1 & 0x04)) {
+            *IF |= 0x10;
+        }
+        jstate1 |= 0x04;
+    }
+    if (GetKeyState(VK_DOWN) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate1 &= 0xF7;
+    }
+    else {
+        if (!(jstate1 & 0x08)) {
+            *IF |= 0x10;
+        }
+        jstate1 |= 0x08;
+    }
+    
+    if (GetKeyState('s') & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate2 &= 0xFE;
+    }
+    else {
+        if (!(jstate2 & 0x01)) {
+            *IF |= 0x10;
+        }
+        jstate2 |= 0x01;
+    }
+    if (GetKeyState('a') & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate2 &= 0xFD;
+    }
+    else {
+        if (!(jstate2 & 0x02)) {
+            *IF |= 0x10;
+        }
+        jstate2 |= 0x02;
+    }
+    if (GetKeyState(VK_RSHIFT) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate2 &= 0xFB;
+    }
+    else {
+        if (!(jstate2 & 0x04)) {
+            *IF |= 0x10;
+        }
+        jstate2 |= 0x04;
+    }
+    if (GetKeyState(VK_RETURN) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+    {
+        jstate2 &= 0xF7;
+    }
+    else {
+        if (!(jstate2 & 0x08)) {
+            *IF |= 0x10;
+        }
+        jstate2 |= 0x08;
+    }
+}
+
+void CPU::execute(uint8_t instruction) {
+    debug_ = true;
+    /*if (PC_ == 0x0100) {
+        loadGameROM("");
+    }*/
+
+ /*   if (PC_ == 0x02C7) {
+        debug_ = true;
+    }
+    if (PC_ == 0x02FA) {
+        debug_ = false;
+    }
+    if (PC_ == 0x02CA) {
+        debug_ = true;
+    }
+    if (PC_ == 0x02E7) {
+        debug_ = false;
+    }*/
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;

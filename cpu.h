@@ -18,6 +18,10 @@ public:
     void execute(uint8_t);
     void updateTimer();
     void checkForInterupts();
+    void getInput();
+    int clock = 0;
+    uint8_t jstate1 = 0x0F;
+    uint8_t jstate2 = 0x0F;
     void printRegs();
 
     // Getter Functions for Register
