@@ -1,73 +1,27 @@
 #include "cpu.h"
 
-//typedef void (CPU::* functionPointer)(uint8_t );
-
 CPU::CPU(MMU* mmu) :
+    P1(mmu->addrBus(0xFF00)),
     DIV((uint16_t*)mmu->addrBus(0xFF03)),
     TIMA(mmu->addrBus(0xFF05)),
     TMA(mmu->addrBus(0xFF06)),
     TAC(mmu->addrBus(0xFF07)),
-    IF(mmu->addrBus(0xFF0F))
+    IF(mmu->addrBus(0xFF0F)),
+    IE(mmu->addrBus(0xFFFF))
 {
     this->mmu = mmu;
     this->PC_ = 0;
     this->SP_ = 0;
     this->clock_ = 0;
     this->isHalted_ = false;
-    //this->debug_ = true;
-    //this->addressBus_ = addressBus;
-    //this->loadGameROM("");
-    //this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
-    //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
-    //this->run();
-
-    //this->step();
 }
 
-//void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
-//    if (size > 0x100) {
-//        for (uint16_t i = 0; i < 0x100; i++) {
-//            addressBus_[address + i] = ROM[i];
-//        }
-//
-//        for (uint16_t i = 0x100; i < 0x800; i++) {
-//            addressBus_[address + i + 0x100] = ROM[i];
-//        }
-//    }
-//    else {
-//        for (uint16_t i = 0; i < size; i++) {
-//            addressBus_[address + i] = ROM[i];
-//        }
-//    }
-//}
-//
-//void CPU::loadGameROM(std::string filePath) {
-//    //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
-//    //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
-//    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
-//    //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-//    //filePath = "D:\\Games\\GBA\\01-special.gb";
-//    //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
-//    //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
-//    //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
-//    //filePath = "D:\\Games\\GBA\\05-op rp.gb";
-//    //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
-//    //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
-//    //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
-//    //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
-//    //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
-//    //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
-//    std::ifstream gameFile(filePath, std::ios::binary);
-//    gameFile.read((char*)(addressBus_), 0x7FFF);
-//    gameFile.close();
-//}
-
 void CPU::step() {
-    if (!(*mmu->addrBus(0xFF00) & 0x10)) {
-        *mmu->addrBus(0xFF00) |= jstate1;
+    if (!(*P1 & 0x10)) {
+        *P1 |= jstate1;
     }
     else {
-        *mmu->addrBus(0xFF00) |= jstate2;
+        *P1 |= jstate2;
     }
     
     if (clock == 0) {
@@ -174,24 +128,9 @@ void CPU::getInput() {
 }
 
 void CPU::execute(uint8_t instruction) {
-    //debug_ = true;
     if (PC_ == 0x0100) {
-        //loadGameROM("");
         mmu->BIOSMapped = false;
     }
-
- /*   if (PC_ == 0x02C7) {
-        debug_ = true;
-    }
-    if (PC_ == 0x02FA) {
-        debug_ = false;
-    }
-    if (PC_ == 0x02CA) {
-        debug_ = true;
-    }
-    if (PC_ == 0x02E7) {
-        debug_ = false;
-    }*/
 
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
@@ -239,15 +178,15 @@ void CPU::updateTimer() {
 }
 
 void CPU::checkForInterupts() {
-    if (*mmu->addrBus(0xFF0F)) { // Interupt Request flag
+    if (*IF) { // Interupt Request flag
         uint8_t mask = 0x01;
         for (int i = 0; i < 5; i++) {
-            if ((*mmu->addrBus(0xFF0F) & mask) && (*mmu->addrBus(0xFFFF) & mask)) {
+            if ((*IF & mask) && (*IE & mask)) {
                 isHalted_ = false;
 
                 if (IME_) {
                     IME_ = false;
-                    *mmu->addrBus(0xFF0F) &= !mask;
+                    *IF &= !mask;
                     *mmu->addrBus(--SP_) = (0xFF00 & PC_) >> 8;
                     *mmu->addrBus(--SP_) = 0x00FF & PC_;
                     PC_ = 0x0040 + (8 * i);

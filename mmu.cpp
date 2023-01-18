@@ -92,10 +92,10 @@ void MMU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 
 void MMU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
-    filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
+    //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
     //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    //filePath = "D:\\Games\\GBA\\01-special.gb";
+    filePath = "D:\\Games\\GBA\\01-special.gb";
     //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
     //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";

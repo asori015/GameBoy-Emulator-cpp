@@ -120,11 +120,13 @@ private:
     uint16_t PC_;
     uint16_t SP_;
     int clock_;
+    uint8_t* const P1;
     uint16_t* const DIV;
     uint8_t* const TIMA;
     const uint8_t* const TMA;
     const uint8_t* const TAC;
     uint8_t* const IF;
+    const uint8_t* const IE;
 
     bool IME_ = false;
     bool cbPrefx_ = false;
