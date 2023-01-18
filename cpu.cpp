@@ -29,8 +29,19 @@ CPU::CPU(Machine* machine, uint8_t* addressBus) :
 }
 
 void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
-    for (uint16_t i = 0; i < size; i++) {
-        addressBus_[address + i] = ROM[i];
+    if (size > 0x100) {
+        for (uint16_t i = 0; i < 0x100; i++) {
+            addressBus_[address + i] = ROM[i];
+        }
+
+        for (uint16_t i = 0x100; i < 0x800; i++) {
+            addressBus_[address + i + 0x100] = ROM[i];
+        }
+    }
+    else {
+        for (uint16_t i = 0; i < size; i++) {
+            addressBus_[address + i] = ROM[i];
+        }
     }
 }
 
@@ -167,10 +178,10 @@ void CPU::getInput() {
 }
 
 void CPU::execute(uint8_t instruction) {
-    debug_ = true;
-    /*if (PC_ == 0x0100) {
+    //debug_ = true;
+    if (PC_ == 0x0100) {
         loadGameROM("");
-    }*/
+    }
 
  /*   if (PC_ == 0x02C7) {
         debug_ = true;

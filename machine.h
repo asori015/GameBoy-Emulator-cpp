@@ -21,6 +21,7 @@ public:
 private:
     CPU* cpu;
     GPU* gpu;
+    MMU* mmu;
 
     uint8_t* addressBus_;
     uint16_t* frame_;

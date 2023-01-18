@@ -31,6 +31,7 @@ Machine::Machine(std::string ROMPath) {
     this->addressBus_ = new uint8_t[0xFFFF]{ 0 };
     this->frame_ = new uint16_t[160 * 144]{ 0 };
     
+    this->mmu = new MMU();
     this->cpu = new CPU(this, addressBus_);
     this->gpu = new GPU(this, addressBus_, frame_);
     this->inVBLANK_ = false;
