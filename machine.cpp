@@ -32,13 +32,13 @@ Machine::Machine(std::string ROMPath) {
     this->frame_ = new uint16_t[160 * 144]{ 0 };
     
     this->mmu = new MMU();
-    this->cpu = new CPU(this, addressBus_);
-    this->gpu = new GPU(this, addressBus_, frame_);
+    this->cpu = new CPU(mmu);
+    this->gpu = new GPU(mmu, frame_);
     this->inVBLANK_ = false;
 }
 
 uint16_t* Machine::getFrame() {
-    while (addressBus_[0xFF44] >= 0x90 && inVBLANK_) {
+    while (*mmu->addrBus(0xFF44) >= 0x90 && inVBLANK_) {
         cpu->step();
         gpu->step();
     }
@@ -46,7 +46,7 @@ uint16_t* Machine::getFrame() {
     inVBLANK_ = false;
 
     //addressBus_[0xFF40] = 0x91;
-    while (addressBus_[0xFF44] < 0x90 && !inVBLANK_) {
+    while (*mmu->addrBus(0xFF44) < 0x90 && !inVBLANK_) {
         cpu->step();
         gpu->step();
     }

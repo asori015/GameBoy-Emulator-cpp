@@ -1,20 +1,21 @@
 #include "mmu.h"
 
 MMU::MMU() {
-    this->bios = new uint8_t[0x0900]{ 0 };
+    this->BIOS = new uint8_t[0x0900]{ 0 };
     this->fixedBank_00 = new uint8_t[0x4000]{ 0 };
     this->fixedBank_NN = new uint8_t[255 * 0x4000]{ 0 };
     this->VRAM = new uint8_t[2 * 0x2000]{ 0 };
     this->ExtRAM = new uint8_t[0x2000]{ 0 };
     this->WRAM_0 = new uint8_t[0x1000]{ 0 };
     this->WRAM_N = new uint8_t[7 * 0x1000]{ 0 };
-    this->OAM = new uint8_t[0x00A0]{ 0 };
-    this->invalidRAM = new uint8_t[0x0060]{ 0xFF };
-    this->registers = new uint8_t[0x0100]{ 0 };
+    this->registers = new uint8_t[0x0200]{ 0 };
+
+    this->BIOSMapped = true;
 
     // loadBIOS() depends on loadGameROM() being completed first
     this->loadGameROM("");
-    this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
+    //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
+    this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
 }
 
 // Main function for accessing and manipulating data in RAM
@@ -26,7 +27,12 @@ uint8_t* MMU::addrBus(uint16_t address) {
     case 1:
     case 2:
     case 3:
-        return &(fixedBank_00[address]);
+        if (BIOSMapped) {
+            return &(BIOS[address]);
+        }
+        else {
+            return &(fixedBank_00[address]);
+        }
         break;
     case 4:
     case 5:
@@ -53,16 +59,12 @@ uint8_t* MMU::addrBus(uint16_t address) {
         break;
     case 15:
     default:
-        if (address >= 0xFF00) {
-            return &(registers[address - 0xFF00]);
-        }
-        if (address >= 0xFEA0) {
-            return &(invalidRAM[address - 0xFEA0]);
-        }
         if (address >= 0xFE00) {
-            return &(OAM[address - 0xFE00]);
+            return &(registers[address - 0xFE00]);
         }
-        return &(WRAM_N[address - 0xF000]);
+        else {
+            return &(WRAM_N[address - 0xF000]);
+        }
         break;
     }
 }
@@ -70,20 +72,20 @@ uint8_t* MMU::addrBus(uint16_t address) {
 void MMU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
     if (size > 0x100) {
         for (uint16_t i = 0; i < 0x100; i++) {
-            bios[i] = ROM[i];
+            BIOS[i] = ROM[i];
         }
 
         for (uint16_t i = 0x100; i < 0x200; i++) {
-            bios[i] = fixedBank_00[i];
+            BIOS[i] = fixedBank_00[i];
         }
 
         for (uint16_t i = 0x100; i < size; i++) {
-            bios[i + 0x100] = ROM[i];
+            BIOS[i + 0x100] = ROM[i];
         }
     }
     else {
         for (uint16_t i = 0; i < size; i++) {
-            bios[i] = ROM[i];
+            BIOS[i] = ROM[i];
         }
     }
 }
@@ -106,5 +108,9 @@ void MMU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
     std::ifstream gameFile(filePath, std::ios::binary);
     gameFile.read((char*)(fixedBank_00), 0x4000);
+    for (int i = 0; i < 0x900; i++) {
+        BIOS[i] = fixedBank_00[i];
+    }
+    gameFile.read((char*)(fixedBank_NN), 0x4000);
     gameFile.close();
 }

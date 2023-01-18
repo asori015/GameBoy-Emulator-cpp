@@ -1,8 +1,12 @@
 #pragma once
 
-#include <functional>
+#include <stdio.h>
+#include <fstream>
 #include <string>
-#include "machine.h"
+#include <functional>
+#include <Windows.h>
+#include "mmu.h"
+#include "bootroms.h"
 
 class Machine;
 
@@ -10,9 +14,9 @@ class CPU {
 public:
     typedef void (CPU::* FunctionPointer)(uint8_t, uint8_t, uint8_t);
 
-    CPU(Machine*, uint8_t*);
-    void loadBIOS(const uint8_t*, int, uint16_t);
-    void loadGameROM(std::string);
+    CPU(MMU*);
+    /*void loadBIOS(const uint8_t*, int, uint16_t);
+    void loadGameROM(std::string);*/
     void step();
     void execute(uint8_t);
     void updateTimer();
@@ -108,8 +112,7 @@ private:
     void setN(bool);
     void setZ(bool);
 
-    Machine* machine_;
-    uint8_t* addressBus_;
+    MMU* mmu;
     uint8_t* registers_ = new uint8_t[8]{ 0 };
     static const FunctionPointer instructionMethods1_[];
     static const FunctionPointer instructionMethods2_[];

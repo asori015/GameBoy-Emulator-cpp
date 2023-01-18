@@ -1,13 +1,13 @@
 #pragma once
 
-#include "machine.h"
+#include "mmu.h"
 
 class Machine;
 class CPU;
 
 class GPU {
 public:
-    GPU(Machine*, uint8_t*, uint16_t*);
+    GPU(MMU*, uint16_t*);
     void step();
 private:
     void renderLine();
@@ -18,7 +18,7 @@ private:
 
     enum State{Mode0, Mode1, Mode2, Mode3};
 
-    uint8_t* addressBus_;
+    MMU* mmu;
     uint16_t* frame_;
 
     const uint8_t* const VRAM_1;
@@ -43,9 +43,9 @@ private:
     const uint8_t* const WX; // Window Y-Coordinate
     uint8_t windowLineCounter_;
     const uint16_t colorValues[4] = { 0xFFFF, 0x56B5, 0x294A, 0x0000 };
-    uint8_t bgDotVals[160];
+    uint8_t bgDotVals[160] = { 0 };
 
     int state_;
     int clock_;
-    bool statInterupt_;
+    bool statInterupt_ = false;
 };

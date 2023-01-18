@@ -1,77 +1,73 @@
-#include <stdio.h>
-#include <fstream>
 #include "cpu.h"
-#include "bootroms.h"
-#include <Windows.h>
 
 //typedef void (CPU::* functionPointer)(uint8_t );
 
-CPU::CPU(Machine* machine, uint8_t* addressBus) :
-    DIV((uint16_t*)&addressBus[0xFF03]),
-    TIMA(&addressBus[0xFF05]),
-    TMA(&addressBus[0xFF06]),
-    TAC(&addressBus[0xFF07]),
-    IF(&addressBus[0xFF0F])
+CPU::CPU(MMU* mmu) :
+    DIV((uint16_t*)mmu->addrBus(0xFF03)),
+    TIMA(mmu->addrBus(0xFF05)),
+    TMA(mmu->addrBus(0xFF06)),
+    TAC(mmu->addrBus(0xFF07)),
+    IF(mmu->addrBus(0xFF0F))
 {
-    this->machine_ = machine;
+    this->mmu = mmu;
     this->PC_ = 0;
     this->SP_ = 0;
     this->clock_ = 0;
     this->isHalted_ = false;
     //this->debug_ = true;
-    this->addressBus_ = addressBus;
-    this->loadGameROM("");
+    //this->addressBus_ = addressBus;
+    //this->loadGameROM("");
     //this->loadBIOS(BootROMs::BIOS_DMG, 256, 0);
-    this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
+    //this->loadBIOS(BootROMs::BIOS_CGB, 2048, 0);
     //this->run();
 
     //this->step();
 }
 
-void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
-    if (size > 0x100) {
-        for (uint16_t i = 0; i < 0x100; i++) {
-            addressBus_[address + i] = ROM[i];
-        }
-
-        for (uint16_t i = 0x100; i < 0x800; i++) {
-            addressBus_[address + i + 0x100] = ROM[i];
-        }
-    }
-    else {
-        for (uint16_t i = 0; i < size; i++) {
-            addressBus_[address + i] = ROM[i];
-        }
-    }
-}
-
-void CPU::loadGameROM(std::string filePath) {
-    //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
-    filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
-    //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
-    //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    //filePath = "D:\\Games\\GBA\\01-special.gb";
-    //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
-    //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
-    //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
-    //filePath = "D:\\Games\\GBA\\05-op rp.gb";
-    //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
-    //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
-    //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
-    //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
-    //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
-    //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
-    std::ifstream gameFile(filePath, std::ios::binary);
-    gameFile.read((char*)(addressBus_), 0x7FFF);
-    gameFile.close();
-}
+//void CPU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
+//    if (size > 0x100) {
+//        for (uint16_t i = 0; i < 0x100; i++) {
+//            addressBus_[address + i] = ROM[i];
+//        }
+//
+//        for (uint16_t i = 0x100; i < 0x800; i++) {
+//            addressBus_[address + i + 0x100] = ROM[i];
+//        }
+//    }
+//    else {
+//        for (uint16_t i = 0; i < size; i++) {
+//            addressBus_[address + i] = ROM[i];
+//        }
+//    }
+//}
+//
+//void CPU::loadGameROM(std::string filePath) {
+//    //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
+//    //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
+//    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
+//    //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
+//    //filePath = "D:\\Games\\GBA\\01-special.gb";
+//    //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
+//    //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
+//    //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
+//    //filePath = "D:\\Games\\GBA\\05-op rp.gb";
+//    //filePath = "D:\\Games\\GBA\\06-ld r,r.gb";
+//    //filePath = "D:\\Games\\GBA\\07-jr,jp,call,ret,rst.gb";
+//    //filePath = "D:\\Games\\GBA\\08-misc instrs.gb";
+//    //filePath = "D:\\Games\\GBA\\09-op r,r.gb";
+//    //filePath = "D:\\Games\\GBA\\10-bit ops.gb";
+//    //filePath = "D:\\Games\\GBA\\11-op a,(hl).gb";
+//    std::ifstream gameFile(filePath, std::ios::binary);
+//    gameFile.read((char*)(addressBus_), 0x7FFF);
+//    gameFile.close();
+//}
 
 void CPU::step() {
-    if (!(addressBus_[0xFF00] & 0x10)) {
-        addressBus_[0xFF00] |= jstate1;
+    if (!(*mmu->addrBus(0xFF00) & 0x10)) {
+        *mmu->addrBus(0xFF00) |= jstate1;
     }
     else {
-        addressBus_[0xFF00] |= jstate2;
+        *mmu->addrBus(0xFF00) |= jstate2;
     }
     
     if (clock == 0) {
@@ -87,7 +83,7 @@ void CPU::step() {
 
     if(!isHalted_) {
         if (clock_ == 0) {
-            execute(addressBus_[PC_]);
+            execute(*mmu->addrBus(PC_));
         }
         clock_ -= 1;
     }
@@ -180,7 +176,8 @@ void CPU::getInput() {
 void CPU::execute(uint8_t instruction) {
     //debug_ = true;
     if (PC_ == 0x0100) {
-        loadGameROM("");
+        //loadGameROM("");
+        mmu->BIOSMapped = false;
     }
 
  /*   if (PC_ == 0x02C7) {
@@ -242,17 +239,17 @@ void CPU::updateTimer() {
 }
 
 void CPU::checkForInterupts() {
-    if (addressBus_[0xFF0F]) { // Interupt Request flag
+    if (*mmu->addrBus(0xFF0F)) { // Interupt Request flag
         uint8_t mask = 0x01;
         for (int i = 0; i < 5; i++) {
-            if ((addressBus_[0xFF0F] & mask) && (addressBus_[0xFFFF] & mask)) {
+            if ((*mmu->addrBus(0xFF0F) & mask) && (*mmu->addrBus(0xFFFF) & mask)) {
                 isHalted_ = false;
 
                 if (IME_) {
                     IME_ = false;
-                    addressBus_[0xFF0F] &= !mask;
-                    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
-                    addressBus_[--SP_] = 0x00FF & PC_;
+                    *mmu->addrBus(0xFF0F) &= !mask;
+                    *mmu->addrBus(--SP_) = (0xFF00 & PC_) >> 8;
+                    *mmu->addrBus(--SP_) = 0x00FF & PC_;
                     PC_ = 0x0040 + (8 * i);
                     clock_ += 4;
                 }
@@ -265,13 +262,13 @@ void CPU::checkForInterupts() {
 
 void CPU::LD_R_to_R(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        registers_[reg1] = addressBus_[getHL()];
+        registers_[reg1] = *mmu->addrBus(getHL());
         clock_ = 8;
         if (debug_) { printf("LD %c, (HL)\n", regNames_[reg1]); }
     }
     else {
         if (reg1 == 0x06) {
-            addressBus_[getHL()] = registers_[reg2];
+            *mmu->addrBus(getHL()) = registers_[reg2];
             clock_ = 8;
             if (debug_) { printf("LD (HL), %c\n", regNames_[reg2]); }
         }
@@ -289,19 +286,19 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
         if (reg2 == 0x00) {
             switch (reg1) {
             case 0x04:
-                address = 0xFF00 + addressBus_[++PC_];
+                address = 0xFF00 + *mmu->addrBus(++PC_);
                 if (address == 0xFF00) {
-                    addressBus_[address] = registers_[A] & 0x30;
+                    *mmu->addrBus(address) = registers_[A] & 0x30;
                 }
                 else {
-                    addressBus_[address] = registers_[A];
+                    *mmu->addrBus(address) = registers_[A];
                 }
                 clock_ = 12;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x06:
-                address = 0xFF00 + addressBus_[++PC_];
-                registers_[A] = addressBus_[address];
+                address = 0xFF00 + *mmu->addrBus(++PC_);
+                registers_[A] = *mmu->addrBus(address);
                 clock_ = 12;
                 if (debug_) { printf("LD A, (0x%04X)\n", address); }
                 break;
@@ -313,25 +310,25 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1) {
             case 0x04:
                 address = 0xFF00 + registers_[C];
-                addressBus_[address] = registers_[A];
+                *mmu->addrBus(address) = registers_[A];
                 clock_ = 8;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x05:
-                address = addressBus_[++PC_] + (addressBus_[++PC_] << 8);
-                addressBus_[address] = registers_[A];
+                address = *mmu->addrBus(++PC_) + (*mmu->addrBus(++PC_) << 8);
+                *mmu->addrBus(address) = registers_[A];
                 clock_ = 16;
                 if (debug_) { printf("LD (0x%04X), A\n", address); }
                 break;
             case 0x06:
                 address = 0xFF00 + registers_[C];
-                registers_[A] = addressBus_[address];
+                registers_[A] = *mmu->addrBus(address);
                 clock_ = 8;
                 if (debug_) { printf("LD A, (0x%04X)\n", address); }
                 break;
             case 0x07:
-                address = addressBus_[++PC_] + (addressBus_[++PC_] << 8);
-                registers_[A] = addressBus_[address];
+                address = *mmu->addrBus(++PC_) + (*mmu->addrBus(++PC_) << 8);
+                registers_[A] = *mmu->addrBus(address);
                 clock_ = 16;
                 if (debug_) { printf("LD A, (0x%04X)\n", address); }
                 break;
@@ -346,45 +343,45 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1)
             {
             case 0x00:
-                addressBus_[getBC()] = registers_[A];
+                *mmu->addrBus(getBC()) = registers_[A];
                 clock_ = 8;
                 if (debug_) { printf("LD (BC), A\n"); }
                 break;
             case 0x01:
-                registers_[A] = addressBus_[getBC()];
+                registers_[A] = *mmu->addrBus(getBC());
                 clock_ = 8;
                 if (debug_) { printf("LD A, (BC)\n"); }
                 break;
             case 0x02:
-                addressBus_[getDE()] = registers_[A];
+                *mmu->addrBus(getDE()) = registers_[A];
                 clock_ = 8;
                 if (debug_) { printf("LD (DE), A\n"); }
                 break;
             case 0x03:
-                registers_[A] = addressBus_[getDE()];
+                registers_[A] = *mmu->addrBus(getDE());
                 clock_ = 8;
                 if (debug_) { printf("LD A, (DE)\n"); }
                 break;
             case 0x04:
-                addressBus_[hl] = registers_[A];
+                *mmu->addrBus(hl) = registers_[A];
                 setHL(hl + 1);
                 clock_ = 8;
                 if (debug_) { printf("LD (HL+), A\n"); }
                 break;
             case 0x05:
-                registers_[A] = addressBus_[hl];
+                registers_[A] = *mmu->addrBus(hl);
                 setHL(hl + 1);
                 clock_ = 8;
                 if (debug_) { printf("LD A, (HL+)\n"); }
                 break;
             case 0x06:
-                addressBus_[hl] = registers_[A];
+                *mmu->addrBus(hl) = registers_[A];
                 setHL(hl - 1);
                 clock_ = 8;
                 if (debug_) { printf("LD (HL-), A\n"); }
                 break;
             case 0x07:
-                registers_[A] = addressBus_[hl];
+                registers_[A] = *mmu->addrBus(hl);
                 setHL(hl - 1);
                 clock_ = 8;
                 if (debug_) { printf("LD A, (HL-)\n"); }
@@ -394,9 +391,9 @@ void CPU::LD_8_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             }
         }
         else if (reg2 == 0x06) {
-            uint8_t val = addressBus_[++PC_];
+            uint8_t val = *mmu->addrBus(++PC_);
             if (reg1 == 0x06) {
-                addressBus_[getHL()] = val;
+                *mmu->addrBus(getHL()) = val;
                 clock_ = 12;
                 if (debug_) { printf("LD (HL), 0x%02X\n", val); }
             }
@@ -417,29 +414,29 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1)
             {
             case 0x00:
-                lVal = addressBus_[SP_++];
-                hVal = addressBus_[SP_++];
+                lVal = *mmu->addrBus(SP_++);
+                hVal = *mmu->addrBus(SP_++);
                 setBC(hVal, lVal);
                 clock_ = 12;
                 if (debug_) { printf("POP BC\n"); }
                 break;
             case 0x02:
-                lVal = addressBus_[SP_++];
-                hVal = addressBus_[SP_++];
+                lVal = *mmu->addrBus(SP_++);
+                hVal = *mmu->addrBus(SP_++);
                 setDE(hVal, lVal);
                 clock_ = 12;
                 if (debug_) { printf("POP DE\n"); }
                 break;
             case 0x04:
-                lVal = addressBus_[SP_++];
-                hVal = addressBus_[SP_++];
+                lVal = *mmu->addrBus(SP_++);
+                hVal = *mmu->addrBus(SP_++);
                 setHL(hVal, lVal);
                 clock_ = 12;
                 if (debug_) { printf("POP HL\n"); }
                 break;
             case 0x06:
-                lVal = addressBus_[SP_++];
-                hVal = addressBus_[SP_++];
+                lVal = *mmu->addrBus(SP_++);
+                hVal = *mmu->addrBus(SP_++);
                 setAF(hVal, lVal);
                 clock_ = 12;
                 if (debug_) { printf("POP AF\n"); }
@@ -458,31 +455,31 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             switch (reg1)
             {
             case 0x00:
-                addressBus_[--SP_] = registers_[B];
-                addressBus_[--SP_] = registers_[C];
+                *mmu->addrBus(--SP_) = registers_[B];
+                *mmu->addrBus(--SP_) = registers_[C];
                 clock_ = 16;
                 if (debug_) { printf("PUSH BC\n"); }
                 break;
             case 0x02:
-                addressBus_[--SP_] = registers_[D];
-                addressBus_[--SP_] = registers_[E];
+                *mmu->addrBus(--SP_) = registers_[D];
+                *mmu->addrBus(--SP_) = registers_[E];
                 clock_ = 16;
                 if (debug_) { printf("PUSH DE\n"); }
                 break;
             case 0x04:
-                addressBus_[--SP_] = registers_[H];
-                addressBus_[--SP_] = registers_[L];
+                *mmu->addrBus(--SP_) = registers_[H];
+                *mmu->addrBus(--SP_) = registers_[L];
                 clock_ = 16;
                 if (debug_) { printf("PUSH HL\n"); }
                 break;
             case 0x06:
-                addressBus_[--SP_] = registers_[A];
-                addressBus_[--SP_] = registers_[F];
+                *mmu->addrBus(--SP_) = registers_[A];
+                *mmu->addrBus(--SP_) = registers_[F];
                 clock_ = 16;
                 if (debug_) { printf("PUSH AF\n"); }
                 break;
             case 0x07:
-                val = addressBus_[++PC_];
+                val = *mmu->addrBus(++PC_);
                 setHL(SP_ + val);
 
                 // Set Z flag to 0
@@ -503,8 +500,8 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
         }
     }
     else {
-        uint8_t lVal = addressBus_[++PC_];
-        uint8_t hVal = addressBus_[++PC_];
+        uint8_t lVal = *mmu->addrBus(++PC_);
+        uint8_t hVal = *mmu->addrBus(++PC_);
         uint16_t addr;
         switch (reg1)
         {
@@ -515,8 +512,8 @@ void CPU::LD_16_Bit(uint8_t op, uint8_t reg1, uint8_t reg2) {
             break;
         case 0x01:
             addr = (hVal << 8) + lVal;
-            addressBus_[addr] = getSP() & 0x00FF;
-            addressBus_[addr + 1] = (getSP() & 0xFF00) >> 8;
+            *mmu->addrBus(addr) = getSP() & 0x00FF;
+            *mmu->addrBus(addr + 1) = (getSP() & 0xFF00) >> 8;
             clock_ = 20;
             if (debug_) { printf("LD (0x%04X), SP\n", addr); }
             break;
@@ -548,8 +545,8 @@ void CPU::JP(uint8_t op, uint8_t reg1, uint8_t reg2) {
         if (debug_) { printf("JP HL\n"); }
     }
     else {
-        uint8_t lVal = addressBus_[++PC_];
-        uint8_t hVal = addressBus_[++PC_];
+        uint8_t lVal = *mmu->addrBus(++PC_);
+        uint8_t hVal = *mmu->addrBus(++PC_);
         uint16_t addr = (hVal << 8) + lVal;
         clock_ = 12;
 
@@ -586,7 +583,7 @@ void CPU::JP(uint8_t op, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::JR(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
-    int8_t nVal = addressBus_[++PC_];
+    int8_t nVal = *mmu->addrBus(++PC_);
     clock_ = 8;
 
     if (reg1 != 0x03) {
@@ -636,13 +633,13 @@ void CPU::ADD(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
-        nVal = addressBus_[++PC_];
+        nVal = *mmu->addrBus(++PC_);
         clock_ = 8;
         if (debug_) { printf("A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
-            nVal = addressBus_[getHL()];
+            nVal = *mmu->addrBus(getHL());
             clock_ = 8;
             if (debug_) { printf("A, (HL)\n"); }
         }
@@ -681,13 +678,13 @@ void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
-        nVal = addressBus_[++PC_];
+        nVal = *mmu->addrBus(++PC_);
         clock_ = 8;
         if (debug_) { printf("A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
-            nVal = addressBus_[getHL()];
+            nVal = *mmu->addrBus(getHL());
             clock_ = 8;
             if (debug_) { printf("A, (HL)\n"); }
         }
@@ -712,14 +709,14 @@ void CPU::SUB(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::AND(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
-        uint8_t nVal = addressBus_[++PC_];
+        uint8_t nVal = *mmu->addrBus(++PC_);
         registers_[A] &= nVal;
         clock_ = 8;
         if (debug_) { printf("AND A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
-            registers_[A] &= addressBus_[getHL()];
+            registers_[A] &= *mmu->addrBus(getHL());
             clock_ = 8;
             if (debug_) { printf("AND A, (HL)\n"); }
         }
@@ -740,14 +737,14 @@ void CPU::AND(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::XOR(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
-        uint8_t nVal = addressBus_[++PC_];
+        uint8_t nVal = *mmu->addrBus(++PC_);
         registers_[A] ^= nVal;
         clock_ = 8;
         if (debug_) { printf("XOR A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
-            registers_[A] ^= addressBus_[getHL()];
+            registers_[A] ^= *mmu->addrBus(getHL());
             clock_ = 8;
             if (debug_) { printf("XOR A, (HL)\n"); }
         }
@@ -768,14 +765,14 @@ void CPU::XOR(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::OR(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (op == 0x03) {
-        uint8_t nVal = addressBus_[++PC_];
+        uint8_t nVal = *mmu->addrBus(++PC_);
         registers_[A] |= nVal;
         clock_ = 8;
         if (debug_) { printf("OR A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
-            registers_[A] |= addressBus_[getHL()];
+            registers_[A] |= *mmu->addrBus(getHL());
             clock_ = 8;
             if (debug_) { printf("OR A, (HL)\n"); }
         }
@@ -800,13 +797,13 @@ void CPU::CP(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     // Get the value being used for the calculation with Register A
     if (op == 0x03) {
-        nVal = addressBus_[++PC_];
+        nVal = *mmu->addrBus(++PC_);
         clock_ = 8;
         if (debug_) { printf("CP A, 0x%02X\n", nVal); }
     }
     else {
         if (reg2 == 0x06) {
-            nVal = addressBus_[getHL()];
+            nVal = *mmu->addrBus(getHL());
             clock_ = 8;
             if (debug_) { printf("CP A, (HL)\n"); }
         }
@@ -831,8 +828,8 @@ void CPU::INC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t result;
 
     if (reg1 == 0x06) {
-        addressBus_[getHL()] += 1;
-        result = addressBus_[getHL()];
+        *mmu->addrBus(getHL()) += 1;
+        result = *mmu->addrBus(getHL());
         clock_ = 12;
         if (debug_) { printf("INC (HL)\n"); }
     }
@@ -855,8 +852,8 @@ void CPU::DEC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t result;
 
     if (reg1 == 0x06) {
-        addressBus_[getHL()] -= 1;
-        result = addressBus_[getHL()];
+        *mmu->addrBus(getHL()) -= 1;
+        result = *mmu->addrBus(getHL());
         clock_ = 12;
         if (debug_) { printf("DEC (HL)\n"); }
     }
@@ -877,7 +874,7 @@ void CPU::DEC(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::ADD_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x00) {
-        int8_t nVal = addressBus_[++PC_]; // Interpreted as signed value
+        int8_t nVal = *mmu->addrBus(++PC_); // Interpreted as signed value
         uint16_t rVal = SP_;
         SP_ += nVal;
 
@@ -981,7 +978,7 @@ void CPU::DEC_16_BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
 void CPU::CBPrefix(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (debug_) { printf("CB Prefix\n"); }
 
-    uint8_t instruction = addressBus_[++PC_];
+    uint8_t instruction = *mmu->addrBus(++PC_);
     uint8_t opcode = (instruction & 0b11000000) >> 6;
     uint8_t register1 = (instruction & 0b00111000) >> 3;
     uint8_t register2 = (instruction & 0b00000111);
@@ -992,14 +989,14 @@ void CPU::CBPrefix(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::RLC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
         // Calculate if Carry flag needs to be set
         setC(rVal >= 0b10000000);
-        addressBus_[getHL()] = (rVal << 1) + getC();
+        *mmu->addrBus(getHL()) = (rVal << 1) + getC();
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("RLC (HL)\n"); }
     }
@@ -1030,14 +1027,14 @@ void CPU::RLC(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::RRC(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
         // Calculate if Carry flag needs to be set
         setC(rVal % 2);
-        addressBus_[getHL()] = (rVal >> 1) + (getC() << 7);
+        *mmu->addrBus(getHL()) = (rVal >> 1) + (getC() << 7);
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("RRC (HL)\n"); }
     }
@@ -1068,14 +1065,14 @@ void CPU::RRC(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::RL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
-        addressBus_[getHL()] = (rVal << 1) + getC();
+        *mmu->addrBus(getHL()) = (rVal << 1) + getC();
         // Calculate if Carry flag needs to be set
         setC(rVal >= 0b10000000);
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("RL (HL)\n"); }
     }
@@ -1106,14 +1103,14 @@ void CPU::RL(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
-        addressBus_[getHL()] = (rVal >> 1) + (getC() << 7);
+        *mmu->addrBus(getHL()) = (rVal >> 1) + (getC() << 7);
         // Calculate if Carry flag needs to be set
         setC(rVal % 2);
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("RR (HL)\n"); }
     }
@@ -1144,14 +1141,14 @@ void CPU::RR(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::SLA(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
         // Calculate if Carry flag needs to be set
         setC(rVal >= 0b10000000);
-        addressBus_[getHL()] = rVal << 1;
+        *mmu->addrBus(getHL()) = rVal << 1;
         
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("SLA (HL)\n"); }
     }
@@ -1175,15 +1172,15 @@ void CPU::SLA(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::SRA(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
         // Calculate if Carry flag needs to be set
         setC(rVal >= 0b10000000);
-        addressBus_[getHL()] = (rVal >> 1) + (getC() << 7);
+        *mmu->addrBus(getHL()) = (rVal >> 1) + (getC() << 7);
         setC(rVal % 2);
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("SRA (HL)\n"); }
     }
@@ -1208,11 +1205,11 @@ void CPU::SRA(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::SWAP(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
-        addressBus_[getHL()] = (rVal << 4) + (rVal >> 4);
+        uint8_t rVal = *mmu->addrBus(getHL());
+        *mmu->addrBus(getHL()) = (rVal << 4) + (rVal >> 4);
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("SWAP (HL)\n"); }
     }
@@ -1234,14 +1231,14 @@ void CPU::SWAP(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
 void CPU::SRL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     if (reg2 == 0x06) {
-        uint8_t rVal = addressBus_[getHL()];
+        uint8_t rVal = *mmu->addrBus(getHL());
 
         // Calculate if Carry flag needs to be set
         setC(rVal % 2);
-        addressBus_[getHL()] = (rVal >> 1);
+        *mmu->addrBus(getHL()) = (rVal >> 1);
 
         // Calculate if Zero flag needs to be set
-        setZ(addressBus_[getHL()] == 0x00);
+        setZ(*mmu->addrBus(getHL()) == 0x00);
         clock_ = 16;
         if (debug_) { printf("SRA (HL)\n"); }
     }
@@ -1268,7 +1265,7 @@ void CPU::BIT(uint8_t op, uint8_t reg1, uint8_t reg2) {
 
     if (reg2 == 0x06) {
         // Calculate if Zero flag needs to be set
-        setZ((addressBus_[getHL()] & mask) == 0);
+        setZ((*mmu->addrBus(getHL()) & mask) == 0);
         clock_ = 12;
         if (debug_) { printf("BIT %d, (HL)\n", reg1); }
     }
@@ -1288,7 +1285,7 @@ void CPU::RES(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t mask = (0x01 << reg1) ^ 0xFF;
 
     if (reg2 == 0x06) {
-        addressBus_[getHL()] &= mask;
+        *mmu->addrBus(getHL()) &= mask;
         clock_ = 16;
         if (debug_) { printf("RES %d, (HL)\n", reg1); }
     }
@@ -1303,7 +1300,7 @@ void CPU::SET(uint8_t op, uint8_t reg1, uint8_t reg2) {
     uint8_t mask = 0x01 << reg1;
 
     if (reg2 == 0x06) {
-        addressBus_[getHL()] |= mask;
+        *mmu->addrBus(getHL()) |= mask;
         clock_ = 16;
         if (debug_) { printf("SET %d, (HL)\n", reg1); }
     }
@@ -1315,8 +1312,8 @@ void CPU::SET(uint8_t op, uint8_t reg1, uint8_t reg2) {
 }
 
 void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
-    uint8_t lAddr = addressBus_[++PC_];
-    uint8_t hAddr = addressBus_[++PC_];
+    uint8_t lAddr = *mmu->addrBus(++PC_);
+    uint8_t hAddr = *mmu->addrBus(++PC_);
     clock_ = 12;
 
     if (reg2 == 0x04) {
@@ -1347,8 +1344,8 @@ void CPU::CALL(uint8_t op, uint8_t reg1, uint8_t reg2) {
     }
 
     PC_ += 1;
-    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
-    addressBus_[--SP_] = 0x00FF & PC_;
+    *mmu->addrBus(--SP_) = (0xFF00 & PC_) >> 8;
+    *mmu->addrBus(--SP_) = 0x00FF & PC_;
     PC_ = (hAddr << 8) + lAddr - 1;
     clock_ = 24;
 }
@@ -1390,16 +1387,16 @@ void CPU::RET(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
         clock_ = 16;
     }
 
-    uint8_t lAddr = addressBus_[SP_++];
-    uint8_t hAddr = addressBus_[SP_++];
+    uint8_t lAddr = *mmu->addrBus(SP_++);
+    uint8_t hAddr = *mmu->addrBus(SP_++);
 
     PC_ = (hAddr << 8) + lAddr - 1;
 }
 
 void CPU::RST(uint8_t instruction, uint8_t reg1, uint8_t reg2) {
     PC_ += 1;
-    addressBus_[--SP_] = (0xFF00 & PC_) >> 8;
-    addressBus_[--SP_] = 0x00FF & PC_;
+    *mmu->addrBus(--SP_) = (0xFF00 & PC_) >> 8;
+    *mmu->addrBus(--SP_) = 0x00FF & PC_;
     PC_ = (reg1 * 8) - 1;
 
     clock_ = 16;
