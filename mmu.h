@@ -8,13 +8,15 @@
 class MMU {
 public:
     MMU();
+    uint8_t readAddr(uint16_t);
+    void writeAddr(uint16_t, uint8_t);
     uint8_t* addrBus(uint16_t);
     void loadBIOS(const uint8_t*, int, uint16_t);
     void loadGameROM(std::string);
 
     bool BIOSMapped;
 private:
-    uint8_t* BIOS;         // 0x0000 to 0x0100 or 0x1000
+    uint8_t* BIOS;         // 0x0000 to 0x0100 or 0x2000
     uint8_t* fixedBank_00; // 0x0000 to 0x3FFF
     uint8_t* fixedBank_NN; // 0x4000 to 0x7FFF
     uint8_t* VRAM;         // 0x8000 to 0x9FFF

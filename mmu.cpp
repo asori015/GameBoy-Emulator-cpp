@@ -69,6 +69,67 @@ uint8_t* MMU::addrBus(uint16_t address) {
     }
 }
 
+uint8_t MMU::readAddr(uint16_t addr) {
+    int index = addr >> 13;
+    switch (index)
+    {
+    case 0: // 0x0000 -> 0x1fff
+        int mbctype;
+        switch (mbctype)
+        {
+        case 1:
+        case 3:
+        case 5:
+            break;
+        case 2:
+            break;
+        default:
+            break;
+        }
+        break;
+    case 1: // 0x0000 -> 0x3fff
+    case 2:
+    case 3: // 0x4000 -> 0x7fff
+        return x;
+        break;
+    default:
+        break;
+    }
+}
+
+void MMU::writeAddr(uint16_t addr, uint8_t val) {
+    int index = addr >> 13;
+    switch (index)
+    {
+    case 0: // 0x0000 -> 0x1fff
+        int mbctype;
+        switch (mbctype)
+        {
+        case 1:
+        case 3:
+        case 5:
+            break;
+        case 2:
+            break;
+        default:
+            break;
+        }
+        break;
+    case 1: // 0x0000 -> 0x3fff
+    case 2:
+    case 3: // 0x4000 -> 0x7fff
+        if (BIOSMapped) {
+            //return &(BIOS[address]);
+        }
+        else {
+            //return &(fixedBank_00[address]);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 void MMU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
     if (size > 0x100) {
         for (uint16_t i = 0; i < 0x100; i++) {
@@ -93,9 +154,9 @@ void MMU::loadBIOS(const uint8_t* ROM, int size, uint16_t address) {
 void MMU::loadGameROM(std::string filePath) {
     //filePath = "D:\\Games\\GBA\\Pokemon Red\\Pokemon red.gb";
     //filePath = "D:\\Games\\GBA\\Tetris\\Tetris.gb";
-    //filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
+    filePath = "D:\\Games\\GBA\\dmg-acid2.gb";
     //filePath = "D:\\Games\\GBA\\cpu_instrs.gb";
-    filePath = "D:\\Games\\GBA\\01-special.gb";
+    //filePath = "D:\\Games\\GBA\\01-special.gb";
     //filePath = "D:\\Games\\GBA\\02-interrupts.gb";
     //filePath = "D:\\Games\\GBA\\03-op sp,hl.gb";
     //filePath = "D:\\Games\\GBA\\04-op r,imm.gb";
